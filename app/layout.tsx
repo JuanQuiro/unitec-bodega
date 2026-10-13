@@ -1,39 +1,45 @@
-import { Metadata } from 'next';
-import Footer from '@/components/ui/Footer';
-import Navbar from '@/components/ui/Navbar';
-import { Toaster } from '@/components/ui/Toasts/toaster';
-import { PropsWithChildren, Suspense } from 'react';
-import { getURL } from '@/utils/helpers';
+import { Metadata, Viewport } from 'next';
+import { Inter } from 'next/font/google';
 import 'styles/main.css';
+import RegisterSW from '@/components/RegisterSW';
 
-const title = 'Next.js Subscription Starter';
-const description = 'Brought to you by Vercel, Stripe, and Supabase.';
+const inter = Inter({ display: 'swap', subsets: ['latin'] });
 
 export const metadata: Metadata = {
-  metadataBase: new URL(getURL()),
-  title: title,
-  description: description,
-  openGraph: {
-    title: title,
-    description: description
-  }
+  title: 'Mi Bodega - Pedidos por WhatsApp',
+  description: 'Sistema de pedidos para bodegas de barrio',
+  manifest: '/manifest.json',
+  themeColor: '#16a34a',
+  appleWebApp: {
+    capable: true,
+    title: 'Mi Bodega',
+    statusBarStyle: 'default',
+  },
+  icons: {
+    apple: '/icons/apple-touch-icon.png',
+  },
+  other: {
+    'mobile-web-app-capable': 'yes',
+  },
 };
 
-export default async function RootLayout({ children }: PropsWithChildren) {
+export const viewport: Viewport = {
+  width: 'device-width',
+  initialScale: 1,
+  maximumScale: 1,
+  themeColor: '#16a34a',
+};
+
+export default function RootLayout({
+  children,
+}: {
+  children: React.ReactNode;
+}) {
   return (
-    <html lang="en">
-      <body className="bg-black">
-        <Navbar />
-        <main
-          id="skip"
-          className="min-h-[calc(100dvh-4rem)] md:min-h[calc(100dvh-5rem)]"
-        >
-          {children}
-        </main>
-        <Footer />
-        <Suspense>
-          <Toaster />
-        </Suspense>
+    <html lang="es">
+      <body className={`${inter.className} min-h-screen bg-gray-50 antialiased`}>
+        <RegisterSW />
+        {children}
       </body>
     </html>
   );

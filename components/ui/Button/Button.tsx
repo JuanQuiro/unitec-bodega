@@ -1,66 +1,38 @@
 'use client';
 
-import cn from 'classnames';
-import React, { forwardRef, useRef, ButtonHTMLAttributes } from 'react';
-import { mergeRefs } from 'react-merge-refs';
+import { forwardRef, ButtonHTMLAttributes } from 'react';
+import { cn } from '@/utils/cn';
 
-import LoadingDots from '@/components/ui/LoadingDots';
-
-import styles from './Button.module.css';
-
-interface Props extends ButtonHTMLAttributes<HTMLButtonElement> {
-  variant?: 'slim' | 'flat';
-  active?: boolean;
-  width?: number;
-  loading?: boolean;
-  Component?: React.ComponentType;
+interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
+  variant?: 'default' | 'outline' | 'ghost' | 'destructive';
+  size?: 'default' | 'sm' | 'lg' | 'icon';
 }
 
-const Button = forwardRef<HTMLButtonElement, Props>((props, buttonRef) => {
-  const {
-    className,
-    variant = 'flat',
-    children,
-    active,
-    width,
-    loading = false,
-    disabled = false,
-    style = {},
-    Component = 'button',
-    ...rest
-  } = props;
-  const ref = useRef(null);
-  const rootClassName = cn(
-    styles.root,
-    {
-      [styles.slim]: variant === 'slim',
-      [styles.loading]: loading,
-      [styles.disabled]: disabled
-    },
-    className
-  );
-  return (
-    <Component
-      aria-pressed={active}
-      data-variant={variant}
-      ref={mergeRefs([ref, buttonRef])}
-      className={rootClassName}
-      disabled={disabled}
-      style={{
-        width,
-        ...style
-      }}
-      {...rest}
-    >
-      {children}
-      {loading && (
-        <i className="flex pl-2 m-0">
-          <LoadingDots />
-        </i>
-      )}
-    </Component>
-  );
-});
+const Button = forwardRef<HTMLButtonElement, ButtonProps>(
+  ({ className, variant = 'default', size = 'default', ...props }, ref) => {
+    return (
+      <button
+        ref={ref}
+        className={cn(
+          'inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50',
+          {
+            'bg-green-600 text-white hover:bg-green-700': variant === 'default',
+            'border border-gray-200 bg-white hover:bg-gray-50': variant === 'outline',
+            'hover:bg-gray-100': variant === 'ghost',
+            'bg-red-600 text-white hover:bg-red-700': variant === 'destructive',
+            'h-10 px-4 py-2': size === 'default',
+            'h-8 px-3': size === 'sm',
+            'h-12 px-6': size === 'lg',
+            'h-10 w-10': size === 'icon',
+          },
+          className
+        )}
+        {...props}
+      />
+    );
+  }
+);
+
 Button.displayName = 'Button';
 
-export default Button;
+export { Button };

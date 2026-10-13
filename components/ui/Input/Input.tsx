@@ -1,37 +1,21 @@
-import React, { InputHTMLAttributes, ChangeEvent } from 'react';
-import cn from 'classnames';
+import { forwardRef, InputHTMLAttributes } from 'react';
+import { cn } from '@/utils/cn';
 
-import s from './Input.module.css';
-
-interface Props extends Omit<InputHTMLAttributes<any>, 'onChange'> {
-  className?: string;
-  onChange: (value: string) => void;
-}
-const Input = (props: Props) => {
-  const { className, children, onChange, ...rest } = props;
-
-  const rootClassName = cn(s.root, {}, className);
-
-  const handleOnChange = (e: ChangeEvent<HTMLInputElement>) => {
-    if (onChange) {
-      onChange(e.target.value);
-    }
-    return null;
-  };
-
-  return (
-    <label>
+const Input = forwardRef<HTMLInputElement, InputHTMLAttributes<HTMLInputElement>>(
+  ({ className, ...props }, ref) => {
+    return (
       <input
-        className={rootClassName}
-        onChange={handleOnChange}
-        autoComplete="off"
-        autoCorrect="off"
-        autoCapitalize="off"
-        spellCheck="false"
-        {...rest}
+        ref={ref}
+        className={cn(
+          'flex h-10 w-full rounded-md border border-gray-200 bg-white px-3 py-2 text-sm placeholder:text-gray-400 focus:border-green-500 focus:outline-none focus:ring-1 focus:ring-green-500 disabled:cursor-not-allowed disabled:opacity-50',
+          className
+        )}
+        {...props}
       />
-    </label>
-  );
-};
+    );
+  }
+);
 
-export default Input;
+Input.displayName = 'Input';
+
+export { Input };
