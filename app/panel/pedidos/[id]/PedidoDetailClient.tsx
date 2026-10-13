@@ -4,7 +4,7 @@ import { useState } from 'react';
 import Link from 'next/link';
 import { Order, Payment, OrderStatus, PAYMENT_METHODS } from '@/types/bodega';
 import { formatPrice, formatDate } from '@/utils/format';
-import { fiadoBalance, toNum } from '@/utils/accounting';
+import { fiadoBalance, monedasForMethod, toNum } from '@/utils/accounting';
 import { StatusBadge } from '@/components/ui/StatusBadge';
 import { Button } from '@/components/ui/Button/Button';
 import { Input } from '@/components/ui/Input/Input';
@@ -45,6 +45,12 @@ export default function PedidoDetailClient({
   const [monto, setMonto] = useState('');
   const [moneda, setMoneda] = useState<'VES' | 'USD'>('VES');
   const [metodo, setMetodo] = useState('efectivo');
+
+  const pickMetodo = (m: string) => {
+    setMetodo(m);
+    const allowed = monedasForMethod(m);
+    if (!allowed.includes(moneda)) setMoneda(allowed[0]);
+  };
 
   const pagado = payments.reduce((s, p) => s + toNum(p.monto), 0);
   const saldo = fiadoBalance(order.total, payments, order.tasa_bcv);
@@ -162,13 +168,14 @@ export default function PedidoDetailClient({
           <div>
             <label className="mb-1 block text-xs font-medium">Moneda</label>
             <select value={moneda} onChange={(e) => setMoneda(e.target.value as 'VES' | 'USD')} className="h-10 rounded-md border px-2 text-sm">
-              <option value="VES">Bs.</option>
-              <option value="USD">USD</option>
+              {monedasForMethod(metodo).map((mo) => (
+                <option key={mo} value={mo}>{mo === 'VES' ? 'Bs.' : 'USD'}</option>
+              ))}
             </select>
           </div>
           <div>
             <label className="mb-1 block text-xs font-medium">Método</label>
-            <select value={metodo} onChange={(e) => setMetodo(e.target.value)} className="h-10 rounded-md border px-2 text-sm">
+            <select value={metodo} onChange={(e) => pickMetodo(e.target.value)} className="h-10 rounded-md border px-2 text-sm">
               {PAYMENT_METHODS.filter((m) => m !== 'fiado').map((m) => (
                 <option key={m} value={m}>{m}</option>
               ))}

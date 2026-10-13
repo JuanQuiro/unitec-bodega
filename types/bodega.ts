@@ -119,6 +119,8 @@ export const PAYMENT_METHODS = [
   'transferencia',
   'tarjeta',
   'zelle',
+  'paypal',
+  'binance',
   'usdt',
   'fiado',
 ] as const;

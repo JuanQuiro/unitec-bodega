@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import { Expense, ExpenseType, PAYMENT_METHODS } from '@/types/bodega';
 import { formatPrice, formatDate } from '@/utils/format';
-import { toNum } from '@/utils/accounting';
+import { monedasForMethod, toNum } from '@/utils/accounting';
 import { Button } from '@/components/ui/Button/Button';
 import { Input } from '@/components/ui/Input/Input';
 import { createClient } from '@/utils/supabase/client';
@@ -24,6 +24,12 @@ export default function GastosClient({ storeId, expenses: initial }: GastosClien
   const [moneda, setMoneda] = useState<'VES' | 'USD'>('VES');
   const [metodo, setMetodo] = useState<string>('efectivo');
   const [tipo, setTipo] = useState<ExpenseType>('operativo');
+
+  const pickMetodo = (m: string) => {
+    setMetodo(m);
+    const allowed = monedasForMethod(m);
+    if (!allowed.includes(moneda)) setMoneda(allowed[0]);
+  };
 
   const total = expenses.reduce((s, g) => s + toNum(g.monto), 0);
 
@@ -76,8 +82,9 @@ export default function GastosClient({ storeId, expenses: initial }: GastosClien
           <div>
             <label className="mb-1 block text-sm font-medium">Moneda</label>
             <select value={moneda} onChange={(e) => setMoneda(e.target.value as 'VES' | 'USD')} className="h-10 w-full rounded-md border px-3 text-sm">
-              <option value="VES">Bs.</option>
-              <option value="USD">USD</option>
+              {monedasForMethod(metodo).map((mo) => (
+                <option key={mo} value={mo}>{mo === 'VES' ? 'Bs.' : 'USD'}</option>
+              ))}
             </select>
           </div>
           <div>
@@ -97,7 +104,7 @@ export default function GastosClient({ storeId, expenses: initial }: GastosClien
           </div>
           <div className="sm:col-span-2">
             <label className="mb-1 block text-sm font-medium">Método</label>
-            <select value={metodo} onChange={(e) => setMetodo(e.target.value)} className="h-10 w-full rounded-md border px-3 text-sm">
+            <select value={metodo} onChange={(e) => pickMetodo(e.target.value)} className="h-10 w-full rounded-md border px-3 text-sm">
               {PAYMENT_METHODS.filter((m) => m !== 'fiado').map((m) => (
                 <option key={m} value={m}>{m}</option>
               ))}

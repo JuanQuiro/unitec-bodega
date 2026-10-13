@@ -222,6 +222,8 @@ export function CartDrawer({
                     <option value="tarjeta">Tarjeta</option>
                     <option value="zelle">Zelle</option>
                     <option value="usdt">USDT</option>
+                    <option value="binance">Binance</option>
+                    <option value="paypal">PayPal</option>
                   </select>
                 </div>
                 <div>

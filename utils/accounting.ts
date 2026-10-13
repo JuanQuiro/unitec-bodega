@@ -15,6 +15,23 @@ export function normalizeMethod(raw: unknown): string {
   return 'efectivo';
 }
 
+// Reglas de moneda por método (patrón cocolu): hay métodos que solo
+// mueven USD, otros solo Bs., y efectivo acepta ambas.
+export const USD_ONLY_METHODS = ['zelle', 'paypal', 'binance', 'usdt'];
+export const VES_ONLY_METHODS = [
+  'efectivo_bs',
+  'pago_movil',
+  'transferencia',
+  'tarjeta',
+];
+
+export function monedasForMethod(metodo: string): ('VES' | 'USD')[] {
+  const m = normalizeMethod(metodo);
+  if (USD_ONLY_METHODS.includes(m)) return ['USD'];
+  if (VES_ONLY_METHODS.includes(m)) return ['VES'];
+  return ['VES', 'USD'];
+}
+
 // Convierte montos VES a su equivalente USD con la tasa del día.
 export function usdEq(monto: number, moneda: string, tasaBcv: number): number {
   if (moneda === 'USD') return toNum(monto);
