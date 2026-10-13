@@ -1,9 +1,25 @@
 'use client';
 
 import Link from 'next/link';
+import {
+  ResponsiveContainer,
+  AreaChart,
+  Area,
+  XAxis,
+  YAxis,
+  Tooltip,
+  CartesianGrid,
+  PieChart,
+  Pie,
+  Cell,
+  BarChart,
+  Bar,
+} from 'recharts';
 import { buildArqueo, buildKpis, round2, toNum } from '@/utils/accounting';
 import { formatPrice } from '@/utils/format';
 import type { Order, Payment, Expense } from '@/types/bodega';
+
+const PIE_COLORS = ['#16a34a', '#2563eb', '#f59e0b', '#dc2626', '#8b5cf6', '#06b6d4', '#64748b'];
 
 interface ContableClientProps {
   storeId: string;
@@ -11,6 +27,7 @@ interface ContableClientProps {
   orders: Order[];
   payments: Payment[];
   expenses: Expense[];
+  products: { id: string; nombre: string; categoria: string }[];
   from: string;
   to: string;
   tasa: number;
@@ -31,6 +48,7 @@ export default function ContableClient({
   orders,
   payments,
   expenses,
+  products,
   from,
   to,
   tasa,
@@ -39,15 +57,49 @@ export default function ContableClient({
   const kpis = buildKpis(orders, paymentsTotal, expenses, tasa);
   const arqueo = buildArqueo(orders, payments, tasa);
 
-  // Ventas por día para la barra simple
+  // Ventas y gastos por día + ventas por categoría + top productos
   const byDay = new Map<string, number>();
+  const gastosByDay = new Map<string, number>();
   for (const o of orders) {
     if (o.estado === 'cancelado') continue;
     const day = o.created_at.slice(0, 10);
     byDay.set(day, (byDay.get(day) || 0) + toNum(o.total));
   }
-  const days = Array.from(byDay.entries()).sort((a, b) => (a[0] < b[0] ? -1 : 1)).slice(-14);
-  const maxDay = Math.max(1, ...days.map(([, v]) => v));
+  for (const g of expenses) {
+    const day = g.created_at.slice(0, 10);
+    gastosByDay.set(day, (gastosByDay.get(day) || 0) + toNum(g.monto));
+  }
+  const allDays = Array.from(
+    new Set(Array.from(byDay.keys()).concat(Array.from(gastosByDay.keys())))
+  )
+    .sort()
+    .slice(-14);
+  const daysData = allDays.map((d) => ({
+    day: d.slice(5),
+    ventas: round2(byDay.get(d) || 0),
+    gastos: round2(gastosByDay.get(d) || 0),
+  }));
+
+  const catOf = new Map(products.map((p) => [p.id, p.categoria]));
+  const byCategory = new Map<string, number>();
+  const byProduct = new Map<string, { nombre: string; total: number }>();
+  for (const o of orders) {
+    if (o.estado === 'cancelado') continue;
+    for (const it of o.items || []) {
+      const cat = catOf.get(it.product_id) || 'otros';
+      byCategory.set(cat, (byCategory.get(cat) || 0) + toNum(it.subtotal));
+      const prev = byProduct.get(it.product_id) || { nombre: it.nombre, total: 0 };
+      prev.total += toNum(it.subtotal);
+      byProduct.set(it.product_id, prev);
+    }
+  }
+  const catData = Array.from(byCategory.entries())
+    .map(([name, value]) => ({ name, value: round2(value) }))
+    .sort((a, b) => b.value - a.value);
+  const topData = Array.from(byProduct.values())
+    .map((p) => ({ nombre: p.nombre.length > 18 ? `${p.nombre.slice(0, 18)}…` : p.nombre, total: round2(p.total) }))
+    .sort((a, b) => b.total - a.total)
+    .slice(0, 5);
 
   const exportBase = `/api/export/ventas?store_id=${storeId}&from=${from}&to=${to}`;
 
@@ -112,21 +164,20 @@ export default function ContableClient({
         <KpiCard label="Pedidos" value={String(kpis.pedidos)} />
       </div>
 
-      {/* Ventas por día */}
-      {days.length > 0 && (
+      {/* Ventas vs gastos por día */}
+      {daysData.length > 0 && (
         <div className="mb-6 rounded-lg border bg-white p-4 shadow-sm">
-          <h3 className="mb-3 font-semibold">Ventas por día</h3>
-          <div className="flex h-28 items-end gap-1">
-            {days.map(([day, v]) => (
-              <div key={day} className="flex flex-1 flex-col items-center gap-1" title={`${day}: ${formatPrice(v)}`}>
-                <div
-                  className="w-full rounded-t bg-green-500"
-                  style={{ height: `${Math.max(4, Math.round((v / maxDay) * 100))}%` }}
-                />
-                <span className="text-[10px] text-gray-400">{day.slice(5)}</span>
-              </div>
-            ))}
-          </div>
+          <h3 className="mb-3 font-semibold">Ventas vs gastos por día</h3>
+          <ResponsiveContainer width="100%" height={220}>
+            <AreaChart data={daysData}>
+              <CartesianGrid strokeDasharray="3 3" />
+              <XAxis dataKey="day" tick={{ fontSize: 11 }} />
+              <YAxis tick={{ fontSize: 11 }} />
+              <Tooltip formatter={(value) => formatPrice(Number(value))} />
+              <Area type="monotone" dataKey="ventas" stroke="#16a34a" fill="#bbf7d0" name="Ventas" />
+              <Area type="monotone" dataKey="gastos" stroke="#dc2626" fill="#fecaca" name="Gastos" />
+            </AreaChart>
+          </ResponsiveContainer>
         </div>
       )}
 
@@ -159,6 +210,42 @@ export default function ContableClient({
             </table>
           </div>
         )}
+      </div>
+
+      {/* Categorías + top productos */}
+      <div className="mb-6 grid gap-4 lg:grid-cols-2">
+        <div className="rounded-lg border bg-white p-4 shadow-sm">
+          <h3 className="mb-3 font-semibold">Ventas por categoría</h3>
+          {catData.length > 0 ? (
+            <ResponsiveContainer width="100%" height={220}>
+              <PieChart>
+                <Pie data={catData} dataKey="value" nameKey="name" outerRadius={80} label>
+                  {catData.map((_, i) => (
+                    <Cell key={i} fill={PIE_COLORS[i % PIE_COLORS.length]} />
+                  ))}
+                </Pie>
+                <Tooltip formatter={(value) => formatPrice(Number(value))} />
+              </PieChart>
+            </ResponsiveContainer>
+          ) : (
+            <p className="text-sm text-gray-500">Sin datos en el período</p>
+          )}
+        </div>
+        <div className="rounded-lg border bg-white p-4 shadow-sm">
+          <h3 className="mb-3 font-semibold">Top productos</h3>
+          {topData.length > 0 ? (
+            <ResponsiveContainer width="100%" height={220}>
+              <BarChart data={topData} layout="vertical">
+                <XAxis type="number" hide />
+                <YAxis type="category" dataKey="nombre" width={110} tick={{ fontSize: 11 }} />
+                <Tooltip formatter={(value) => formatPrice(Number(value))} />
+                <Bar dataKey="total" fill="#16a34a" radius={[0, 4, 4, 0]} />
+              </BarChart>
+            </ResponsiveContainer>
+          ) : (
+            <p className="text-sm text-gray-500">Sin datos en el período</p>
+          )}
+        </div>
       </div>
 
       {/* Accesos rápidos */}

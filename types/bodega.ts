@@ -7,6 +7,7 @@ export interface Store {
   logo_url: string | null;
   direccion: string | null;
   activa: boolean;
+  tasa_bcv: number;
   created_at: string;
 }
 

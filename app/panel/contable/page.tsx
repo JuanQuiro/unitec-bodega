@@ -18,19 +18,19 @@ export default async function ContablePage({ searchParams }: PageProps) {
     .select('*')
     .eq('owner_id', user.id)
     .single();
-  const store = storeData as { id: string; slug: string } | null;
+  const store = storeData as { id: string; slug: string; tasa_bcv: number } | null;
   if (!store) redirect('/panel/tienda');
 
   const to = searchParams?.to || new Date().toISOString().slice(0, 10);
   const from =
     searchParams?.from ||
     new Date(Date.now() - 29 * 24 * 60 * 60 * 1000).toISOString().slice(0, 10);
-  const tasa = Number(searchParams?.tasa || 0);
+  const tasa = Number(searchParams?.tasa || store.tasa_bcv || 0);
 
   const range = (q: string) => `${q}T00:00:00`;
   const rangeEnd = (q: string) => `${q}T23:59:59`;
 
-  const [{ data: ordersData }, { data: paymentsData }, { data: expensesData }] =
+  const [{ data: ordersData }, { data: paymentsData }, { data: expensesData }, { data: productsData }] =
     await Promise.all([
       supabase
         .from('orders')
@@ -51,11 +51,15 @@ export default async function ContablePage({ searchParams }: PageProps) {
         .eq('store_id', store.id)
         .gte('created_at', range(from))
         .lte('created_at', rangeEnd(to)),
+      supabase.from('products').select('*').eq('store_id', store.id),
     ]);
 
   const orders = (ordersData || []) as Order[];
   const payments = (paymentsData || []) as Payment[];
   const expenses = (expensesData || []) as Expense[];
+  const products = ((productsData || []) as { id: string; nombre: string; categoria: string }[]).map(
+    (p) => ({ id: p.id, nombre: p.nombre, categoria: p.categoria })
+  );
 
   return (
     <ContableClient
@@ -64,6 +68,7 @@ export default async function ContablePage({ searchParams }: PageProps) {
       orders={orders || []}
       payments={payments || []}
       expenses={expenses || []}
+      products={products}
       from={from}
       to={to}
       tasa={tasa}

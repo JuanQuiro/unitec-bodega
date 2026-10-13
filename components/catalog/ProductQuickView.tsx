@@ -5,16 +5,28 @@ import Image from 'next/image';
 import { Product } from '@/types/bodega';
 import { formatPrice } from '@/utils/format';
 import { Button } from '@/components/ui/Button/Button';
-import { X, Plus, Minus } from 'lucide-react';
+import { X, Plus, Minus, Share2, Check } from 'lucide-react';
 
 interface ProductQuickViewProps {
   product: Product | null;
+  storeSlug: string;
   onClose: () => void;
   onAdd: (product: Product, quantity: number) => void;
 }
 
-export function ProductQuickView({ product, onClose, onAdd }: ProductQuickViewProps) {
+export function ProductQuickView({ product, storeSlug, onClose, onAdd }: ProductQuickViewProps) {
   const [quantity, setQuantity] = useState(1);
+  const [copied, setCopied] = useState(false);
+
+  const handleShare = async () => {
+    try {
+      await navigator.clipboard.writeText(`${window.location.origin}/s/${storeSlug}?p=${product?.id}`);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    } catch {
+      // portapapeles no disponible
+    }
+  };
 
   if (!product) return null;
   const outOfStock = product.stock <= 0;
@@ -77,6 +89,13 @@ export function ProductQuickView({ product, onClose, onAdd }: ProductQuickViewPr
               Agregar · {formatPrice(product.precio * quantity)}
             </Button>
           </div>
+          <button
+            onClick={handleShare}
+            className="mt-3 flex w-full items-center justify-center gap-2 rounded-lg border py-2 text-sm font-medium text-gray-600 hover:bg-gray-50"
+          >
+            {copied ? <Check className="h-4 w-4 text-green-600" /> : <Share2 className="h-4 w-4" />}
+            {copied ? '¡Link copiado!' : 'Compartir producto'}
+          </button>
         </div>
       </div>
     </div>

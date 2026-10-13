@@ -1,6 +1,7 @@
 'use client';
 
-import { useState } from 'react';
+import { Suspense, useEffect, useState } from 'react';
+import { useSearchParams } from 'next/navigation';
 import { Store, Product, Zone, OrderItem, Order } from '@/types/bodega';
 import { StoreHeader } from '@/components/catalog/StoreHeader';
 import { SearchBar } from '@/components/catalog/SearchBar';
@@ -16,6 +17,23 @@ interface CatalogClientProps {
   store: Store;
   products: Product[];
   zones: Zone[];
+}
+
+function QuickViewOpener({
+  products,
+  onOpen,
+}: {
+  products: Product[];
+  onOpen: (p: Product) => void;
+}) {
+  const searchParams = useSearchParams();
+  const pid = searchParams.get('p');
+  useEffect(() => {
+    if (!pid) return;
+    const found = products.find((p) => p.id === pid);
+    if (found) onOpen(found);
+  }, [pid, products, onOpen]);
+  return null;
 }
 
 export default function CatalogClient({
@@ -145,7 +163,10 @@ export default function CatalogClient({
         <ProductGrid products={filteredProducts} onAddToCart={(p) => addToCart(p)} onQuickView={setQuickView} />
       </main>
 
-      <ProductQuickView product={quickView} onClose={() => setQuickView(null)} onAdd={addToCart} />
+      <ProductQuickView product={quickView} storeSlug={store.slug} onClose={() => setQuickView(null)} onAdd={addToCart} />
+      <Suspense fallback={null}>
+        <QuickViewOpener products={products} onOpen={setQuickView} />
+      </Suspense>
 
       {cartItems.length > 0 && (
         <button

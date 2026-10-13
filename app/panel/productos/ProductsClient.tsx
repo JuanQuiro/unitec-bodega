@@ -5,8 +5,9 @@ import { Product, PRODUCT_CATEGORIES } from '@/types/bodega';
 import { formatPrice } from '@/utils/format';
 import { Button } from '@/components/ui/Button/Button';
 import { ProductForm } from '@/components/ui/ProductForm';
+import ImportClient from './ImportClient';
 import { createClient } from '@/utils/supabase/client';
-import { Plus, Pencil, Trash2, X } from 'lucide-react';
+import { Plus, Pencil, Trash2, X, Upload } from 'lucide-react';
 
 interface ProductsClientProps {
   products: Product[];
@@ -22,6 +23,7 @@ export default function ProductsClient({
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
   const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null);
   const [bulkMode, setBulkMode] = useState(false);
+  const [importMode, setImportMode] = useState(false);
   const [bulkPercent, setBulkPercent] = useState('');
   const [bulkCategory, setBulkCategory] = useState<string>('all');
 
@@ -130,11 +132,30 @@ export default function ProductsClient({
     setBulkPercent('');
   };
 
+  const refreshProducts = async () => {
+    const supabase = createClient();
+    const { data: refreshed } = await supabase
+      .from('products')
+      .select('*')
+      .eq('store_id', storeId)
+      .order('created_at', { ascending: false });
+    if (refreshed) {
+      setProducts(refreshed as Product[]);
+    }
+  };
+
   return (
     <div>
       <div className="mb-6 flex items-center justify-between">
         <h2 className="text-2xl font-bold">Productos</h2>
         <div className="flex gap-2">
+          <Button
+            variant="outline"
+            onClick={() => setImportMode(!importMode)}
+          >
+            <Upload className="mr-2 h-4 w-4" />
+            Importar Excel
+          </Button>
           <Button
             variant="outline"
             onClick={() => setBulkMode(!bulkMode)}
@@ -176,6 +197,16 @@ export default function ProductsClient({
               Cancelar
             </Button>
           </div>
+        </div>
+      )}
+
+      {importMode && (
+        <div className="mb-6 rounded-lg border bg-white p-4 shadow-sm">
+          <ImportClient
+            storeId={storeId}
+            onDone={refreshProducts}
+            onCancel={() => setImportMode(false)}
+          />
         </div>
       )}
 
@@ -244,8 +275,9 @@ export default function ProductsClient({
             <tr className="border-b text-left text-sm text-gray-500">
               <th className="p-4">Producto</th>
               <th className="p-4">Categoría</th>
-              <th className="p-4">Precio</th>
-              <th className="p-4">Stock</th>
+                <th className="p-4">Precio</th>
+                <th className="p-4">Margen</th>
+                <th className="p-4">Stock</th>
               <th className="p-4">Estado</th>
               <th className="p-4">Acciones</th>
             </tr>
@@ -274,7 +306,19 @@ export default function ProductsClient({
                 <td className="p-4 font-medium">
                   {formatPrice(product.precio)}
                 </td>
-                <td className="p-4 text-sm">{product.stock}</td>
+                <td className="p-4 text-sm">
+                  {product.precio > 0 && product.costo > 0
+                    ? `${Math.round((1 - product.costo / product.precio) * 100)}%`
+                    : '—'}
+                </td>
+                <td className="p-4 text-sm">
+                  <span className={product.stock <= 5 ? 'font-bold text-red-600' : ''}>
+                    {product.stock}
+                  </span>
+                  {product.stock <= 5 && (
+                    <span className="ml-1 text-xs text-red-500">¡Bajo!</span>
+                  )}
+                </td>
                 <td className="p-4">
                   <button
                     onClick={() => handleToggleActive(product)}

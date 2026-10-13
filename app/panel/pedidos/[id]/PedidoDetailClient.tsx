@@ -9,6 +9,7 @@ import { StatusBadge } from '@/components/ui/StatusBadge';
 import { Button } from '@/components/ui/Button/Button';
 import { Input } from '@/components/ui/Input/Input';
 import { createClient } from '@/utils/supabase/client';
+import { applyStockMovement } from '@/utils/stock';
 
 const nextStatus: Partial<Record<OrderStatus, OrderStatus>> = {
   pendiente: 'confirmado',
@@ -47,11 +48,15 @@ export default function PedidoDetailClient({
 
   const updateStatus = async (newStatus: OrderStatus) => {
     const supabase = createClient();
+    const prevStatus = order.estado;
     const { error } = await supabase
       .from('orders')
       .update({ estado: newStatus, updated_at: new Date().toISOString() })
       .eq('id', order.id);
-    if (!error) setOrder((prev) => ({ ...prev, estado: newStatus }));
+    if (!error) {
+      await applyStockMovement(supabase, order.items, prevStatus, newStatus);
+      setOrder((prev) => ({ ...prev, estado: newStatus }));
+    }
   };
 
   const handlePayment = async (e: React.FormEvent) => {

@@ -7,6 +7,7 @@ import { formatPrice, formatDate } from '@/utils/format';
 import { StatusBadge } from '@/components/ui/StatusBadge';
 import { Button } from '@/components/ui/Button/Button';
 import { createClient } from '@/utils/supabase/client';
+import { applyStockMovement } from '@/utils/stock';
 import { cn } from '@/utils/cn';
 
 interface OrdersClientProps {
@@ -36,16 +37,26 @@ export default function OrdersClient({
 }: OrdersClientProps) {
   const [orders, setOrders] = useState<Order[]>(initialOrders);
   const [filter, setFilter] = useState<OrderStatus | null>(null);
+  const [search, setSearch] = useState('');
 
-  const filteredOrders = filter
-    ? orders.filter((o) => o.estado === filter)
-    : orders;
+  const filteredOrders = orders.filter((o) => {
+    if (filter && o.estado !== filter) return false;
+    if (search) {
+      const q = search.toLowerCase();
+      return (
+        o.cliente_nombre.toLowerCase().includes(q) ||
+        o.cliente_telefono.toLowerCase().includes(q)
+      );
+    }
+    return true;
+  });
 
   const updateOrderStatus = async (
     orderId: string,
     newStatus: OrderStatus
   ) => {
     const supabase = createClient();
+    const prev = orders.find((o) => o.id === orderId);
 
     const { error } = await supabase
       .from('orders')
@@ -53,8 +64,11 @@ export default function OrdersClient({
       .eq('id', orderId);
 
     if (!error) {
-      setOrders((prev) =>
-        prev.map((o) =>
+      if (prev) {
+        await applyStockMovement(supabase, prev.items, prev.estado, newStatus);
+      }
+      setOrders((prevOrders) =>
+        prevOrders.map((o) =>
           o.id === orderId
             ? { ...o, estado: newStatus, updated_at: new Date().toISOString() }
             : o
@@ -71,6 +85,17 @@ export default function OrdersClient({
   return (
     <div>
       <h2 className="mb-6 text-2xl font-bold">Pedidos</h2>
+
+      {/* Buscador */}
+      <div className="mb-4">
+        <input
+          type="search"
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+          placeholder="Buscar por cliente o teléfono..."
+          className="h-10 w-full max-w-md rounded-md border px-3 text-sm"
+        />
+      </div>
 
       {/* Filtros */}
       <div className="mb-6 flex flex-wrap gap-2">

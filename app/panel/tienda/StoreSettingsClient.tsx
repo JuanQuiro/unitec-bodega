@@ -17,6 +17,7 @@ export default function StoreSettingsClient({ store }: StoreSettingsClientProps)
   const [nombre, setNombre] = useState<string>(store.nombre);
   const [whatsapp, setWhatsapp] = useState<string>(store.whatsapp);
   const [direccion, setDireccion] = useState<string>(store.direccion ?? '');
+  const [tasa, setTasa] = useState<string>(store.tasa_bcv ? String(store.tasa_bcv) : '');
   const [logoUrl, setLogoUrl] = useState<string>(store.logo_url ?? '');
   const [saving, setSaving] = useState(false);
   const [copied, setCopied] = useState(false);
@@ -35,6 +36,7 @@ export default function StoreSettingsClient({ store }: StoreSettingsClientProps)
           nombre,
           whatsapp,
           direccion,
+          tasa_bcv: tasa ? parseFloat(tasa) : 0,
           logo_url: logoUrl || null,
         })
         .eq('id', store.id);
@@ -87,6 +89,18 @@ export default function StoreSettingsClient({ store }: StoreSettingsClientProps)
             </div>
 
             <div>
+              <label className="mb-1 block text-sm font-medium">Tasa Bs./USD (para equivalencias)</label>
+              <Input
+                type="number"
+                step="0.01"
+                min="0"
+                value={tasa}
+                onChange={(e) => setTasa(e.target.value)}
+                placeholder="0 = sin equivalencia USD"
+              />
+            </div>
+
+            <div>
               <label className="mb-2 block text-sm font-medium">Logo</label>
               <ImageUpload
                 bucket="logos"
@@ -114,6 +128,24 @@ export default function StoreSettingsClient({ store }: StoreSettingsClientProps)
 
           <div className="flex justify-center">
             <QRCode value={publicUrl} size={200} />
+          </div>
+        </div>
+
+        <div className="rounded-lg border bg-white p-6">
+          <h3 className="mb-4 text-lg font-medium">Exportables</h3>
+          <div className="flex flex-wrap gap-2">
+            <a
+              href={`/api/export/catalogo?store_id=${store.id}`}
+              className="rounded-lg bg-green-600 px-4 py-2 text-sm font-medium text-white hover:bg-green-700"
+            >
+              Excel del catálogo
+            </a>
+            <a
+              href="/panel/tienda/lista"
+              className="rounded-lg border bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50"
+            >
+              Lista imprimible / PDF
+            </a>
           </div>
         </div>
 
