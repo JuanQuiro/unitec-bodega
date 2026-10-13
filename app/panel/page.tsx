@@ -1,20 +1,10 @@
 import { createClient } from '@/utils/supabase/server';
 import { getUser } from '@/utils/supabase/queries';
-import { Order, Store, Zone, ORDER_STATUSES, OrderStatus } from '@/types/bodega';
+import { getMyStore } from '@/utils/supabase/store';
+import { Order, Zone, ORDER_STATUSES, OrderStatus } from '@/types/bodega';
 import { redirect } from 'next/navigation';
+import Link from 'next/link';
 import OrdersClient from './OrdersClient';
-
-async function getStore(ownerId: string): Promise<Store | null> {
-  const supabase = createClient();
-  const { data, error } = await supabase
-    .from('stores')
-    .select('*')
-    .eq('owner_id', ownerId)
-    .single();
-
-  if (error || !data) return null;
-  return data as Store;
-}
 
 async function getOrders(storeId: string): Promise<Order[]> {
   const supabase = createClient();
@@ -47,26 +37,47 @@ export default async function PanelPage() {
     redirect('/login');
   }
 
-  const store = await getStore(user.id);
+  const mine = await getMyStore(user.id);
 
-  if (!store) {
+  if (!mine) {
     return (
       <div className="flex h-64 items-center justify-center text-gray-500">
         No tenés una tienda creada. Contactá al administrador.
       </div>
     );
   }
+  const { store } = mine;
 
   const [orders, zones] = await Promise.all([
     getOrders(store.id),
     getZones(store.id),
   ]);
 
+  const { count: productsCount } = await supabase
+    .from('products')
+    .select('id', { count: 'exact', head: true })
+    .eq('store_id', store.id);
+  const { count: zonesCount } = await supabase
+    .from('zones')
+    .select('id', { count: 'exact', head: true })
+    .eq('store_id', store.id);
+  const isEmpty = (productsCount || 0) === 0 && (zonesCount || 0) === 0;
+
   return (
-    <OrdersClient
-      orders={orders}
-      zones={zones}
-      storeId={store.id}
-    />
+    <>
+      {isEmpty && (
+        <div className="mb-4 rounded-lg border border-green-200 bg-green-50 p-4 text-sm text-green-800">
+          ¡Bienvenido! Tu tienda está vacía: completala en 3 pasos.{' '}
+          <Link href="/panel/onboarding" className="font-medium underline">
+            Empezar ahora
+          </Link>
+        </div>
+      )}
+      <OrdersClient
+        orders={orders}
+        zones={zones}
+        storeId={store.id}
+      />
+    </>
   );
 }

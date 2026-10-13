@@ -14,6 +14,7 @@ export default function LoginPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [showRegister, setShowRegister] = useState(false);
+  const [acceptedTerms, setAcceptedTerms] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [fullName, setFullName] = useState('');
   const router = useRouter();
@@ -41,6 +42,10 @@ export default function LoginPage() {
 
   const handleRegister = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!acceptedTerms) {
+      setError('Debés aceptar los términos para registrarte.');
+      return;
+    }
     setLoading(true);
     setError(null);
 
@@ -129,6 +134,27 @@ export default function LoginPage() {
                 </button>
               </div>
             </div>
+
+            {showRegister && (
+              <label className="flex items-start gap-2 text-sm text-gray-600">
+                <input
+                  type="checkbox"
+                  checked={acceptedTerms}
+                  onChange={(e) => setAcceptedTerms(e.target.checked)}
+                  className="mt-1 h-4 w-4"
+                />
+                <span>
+                  Acepto los{' '}
+                  <Link href="/terminos" className="font-medium text-green-600 hover:underline">
+                    términos
+                  </Link>{' '}
+                  y la{' '}
+                  <Link href="/privacidad" className="font-medium text-green-600 hover:underline">
+                    privacidad
+                  </Link>
+                </span>
+              </label>
+            )}
 
             {error && (
               <p className="text-sm text-red-600">

@@ -12,13 +12,17 @@ const navItems = [
   { href: '/panel/tienda', label: 'Tienda', icon: Store },
 ];
 
-export default function MobileNav() {
+export default function MobileNav({ role = 'owner' }: { role?: 'owner' | 'empleado' }) {
   const pathname = usePathname();
+  const items =
+    role === 'owner'
+      ? navItems
+      : navItems.filter((i) => ['/panel', '/panel/productos'].includes(i.href));
 
   return (
     <nav className="fixed bottom-0 left-0 right-0 z-40 border-t bg-white md:hidden">
-      <div className="grid grid-cols-5">
-        {navItems.map((item) => {
+      <div className={`grid ${items.length > 2 ? 'grid-cols-5' : 'grid-cols-2'}`}>
+        {items.map((item) => {
           const isActive =
             item.href === '/panel'
               ? pathname === '/panel'

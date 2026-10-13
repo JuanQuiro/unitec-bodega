@@ -49,8 +49,19 @@ export default function Home() {
           >
             Empezar ahora
           </Link>
+          <p className="mt-3 text-sm text-gray-500">14 días de prueba, sin tarjeta</p>
         </div>
       </main>
+
+      <footer className="border-t bg-white">
+        <div className="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-2 px-4 py-4 text-sm text-gray-500">
+          <span>Mi Bodega · Pedidos por WhatsApp</span>
+          <div className="flex gap-4">
+            <Link href="/terminos" className="hover:underline">Términos</Link>
+            <Link href="/privacidad" className="hover:underline">Privacidad</Link>
+          </div>
+        </div>
+      </footer>
     </div>
   );
 }

@@ -21,13 +21,27 @@ export async function GET(request: Request) {
 
   const { data: storeData } = await supabase
     .from('stores')
-    .select('id,nombre,slug')
+    .select('*')
     .eq('id', storeId)
     .eq('owner_id', user.id)
     .single();
-  const store = storeData as { id: string; nombre: string; slug: string } | null;
+  const store = storeData as { id: string; nombre: string; slug: string; created_at: string } | null;
   if (!store) {
     return NextResponse.json({ error: 'tienda no encontrada' }, { status: 404 });
+  }
+
+  const { data: subData } = await supabase
+    .from('bodega_subscriptions')
+    .select('*')
+    .eq('store_id', storeId)
+    .single();
+  const { getPlanStatus } = await import('@/utils/subscription');
+  const st = getPlanStatus(
+    store,
+    subData as { plan: string; status: string; valid_until: string | null } | null
+  );
+  if (st.expired) {
+    return NextResponse.json({ error: 'plan vencido' }, { status: 403 });
   }
 
   const { data: productsData } = await supabase

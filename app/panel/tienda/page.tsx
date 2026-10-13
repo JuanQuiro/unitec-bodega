@@ -1,20 +1,8 @@
 import { createClient } from '@/utils/supabase/server';
 import { getUser } from '@/utils/supabase/queries';
-import { Store } from '@/types/bodega';
+import { getMyStore } from '@/utils/supabase/store';
 import { redirect } from 'next/navigation';
 import StoreSettingsClient from './StoreSettingsClient';
-
-async function getStore(ownerId: string): Promise<Store | null> {
-  const supabase = createClient();
-  const { data, error } = await supabase
-    .from('stores')
-    .select('*')
-    .eq('owner_id', ownerId)
-    .single();
-
-  if (error || !data) return null;
-  return data as Store;
-}
 
 export default async function StoreSettingsPage() {
   const supabase = createClient();
@@ -24,11 +12,15 @@ export default async function StoreSettingsPage() {
     redirect('/login');
   }
 
-  const store = await getStore(user.id);
+  const mine = await getMyStore(user.id);
 
-  if (!store) {
+  if (!mine) {
+    redirect('/panel/onboarding');
+  }
+  if (mine.role !== 'owner') {
     redirect('/panel');
   }
+  const { store } = mine;
 
   return <StoreSettingsClient store={store} />;
 }

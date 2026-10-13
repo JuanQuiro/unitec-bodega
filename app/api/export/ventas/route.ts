@@ -23,13 +23,33 @@ export async function GET(request: Request) {
 
   const { data: storeData } = await supabase
     .from('stores')
-    .select('id,slug')
+    .select('*')
     .eq('id', storeId)
     .eq('owner_id', user.id)
     .single();
-  const store = storeData as { id: string; slug: string } | null;
+  const store = storeData as { id: string; slug: string; created_at: string } | null;
   if (!store) {
     return NextResponse.json({ error: 'tienda no encontrada' }, { status: 404 });
+  }
+
+  const days =
+    (new Date(to).getTime() - new Date(from).getTime()) / (1000 * 60 * 60 * 24);
+  if (!Number.isFinite(days) || days < 0 || days > 90) {
+    return NextResponse.json({ error: 'rango máximo: 90 días' }, { status: 400 });
+  }
+
+  const { data: subData } = await supabase
+    .from('bodega_subscriptions')
+    .select('*')
+    .eq('store_id', storeId)
+    .single();
+  const { getPlanStatus } = await import('@/utils/subscription');
+  const st = getPlanStatus(
+    store,
+    subData as { plan: string; status: string; valid_until: string | null } | null
+  );
+  if (st.expired) {
+    return NextResponse.json({ error: 'plan vencido' }, { status: 403 });
   }
 
   const { data: ordersData } = await supabase

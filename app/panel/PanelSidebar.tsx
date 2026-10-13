@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { Package, ShoppingCart, MapPin, Store, LogOut, Calculator, HandCoins, Receipt, Lock } from 'lucide-react';
+import { Package, ShoppingCart, MapPin, Store, LogOut, Calculator, HandCoins, Receipt, Lock, Users } from 'lucide-react';
 import { createClient } from '@/utils/supabase/client';
 import { useRouter } from 'next/navigation';
 
@@ -14,12 +14,16 @@ const navItems = [
   { href: '/panel/gastos', label: 'Gastos', icon: Receipt },
   { href: '/panel/cierre', label: 'Cierre', icon: Lock },
   { href: '/panel/zonas', label: 'Zonas', icon: MapPin },
+  { href: '/panel/equipo', label: 'Equipo', icon: Users },
   { href: '/panel/tienda', label: 'Mi Tienda', icon: Store },
 ];
 
-export default function PanelSidebar() {
+const EMPLEADO_HREFS = ['/panel', '/panel/productos'];
+
+export default function PanelSidebar({ role = 'owner' }: { role?: 'owner' | 'empleado' }) {
   const pathname = usePathname();
   const router = useRouter();
+  const items = role === 'owner' ? navItems : navItems.filter((i) => EMPLEADO_HREFS.includes(i.href));
 
   const handleLogout = async () => {
     const supabase = createClient();
@@ -35,7 +39,7 @@ export default function PanelSidebar() {
       </div>
 
       <nav className="flex-1 space-y-1 p-4">
-        {navItems.map((item) => {
+        {items.map((item) => {
           const isActive =
             item.href === '/panel'
               ? pathname === '/panel'
