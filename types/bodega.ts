@@ -17,6 +17,8 @@ export interface Product {
   precio: number;
   stock: number;
   foto_url: string | null;
+  descripcion: string | null;
+  costo: number;
   unidad: 'unidad' | 'kg' | 'detal' | 'bulto';
   categoria: 'viveres' | 'lacteos' | 'embutidos' | 'limpieza' | 'bebidas' | 'snacks';
   activo: boolean;
@@ -59,6 +61,8 @@ export interface Order {
   total: number;
   estado: OrderStatus;
   notas: string | null;
+  metodo_pago: string;
+  tasa_bcv: number;
   created_at: string;
   updated_at: string;
 }
@@ -91,10 +95,65 @@ export interface Database {
       products: { Row: Product; Insert: Omit<Product, 'id' | 'created_at'>; Update: Partial<Omit<Product, 'id'>> };
       zones: { Row: Zone; Insert: Omit<Zone, 'id' | 'created_at'>; Update: Partial<Omit<Zone, 'id'>> };
       orders: { Row: Order; Insert: Omit<Order, 'id' | 'created_at' | 'updated_at'>; Update: Partial<Omit<Order, 'id'>> };
+      bodega_payments: { Row: Payment; Insert: Omit<Payment, 'id' | 'created_at'>; Update: Partial<Omit<Payment, 'id'>>; Relationships: [] };
+      bodega_expenses: { Row: Expense; Insert: Omit<Expense, 'id' | 'created_at'>; Update: Partial<Omit<Expense, 'id'>>; Relationships: [] };
+      bodega_cash_closings: { Row: CashClosing; Insert: Omit<CashClosing, 'id' | 'created_at'>; Update: Partial<Omit<CashClosing, 'id'>>; Relationships: [] };
     };
     Views: Record<string, never>;
     Functions: Record<string, never>;
     Enums: Record<string, never>;
     CompositeTypes: Record<string, never>;
   };
+}
+
+// --- Contabilidad ---
+
+export const PAYMENT_METHODS = [
+  'efectivo',
+  'efectivo_bs',
+  'pago_movil',
+  'transferencia',
+  'tarjeta',
+  'zelle',
+  'fiado',
+] as const;
+
+export type PaymentMethod = (typeof PAYMENT_METHODS)[number];
+
+export interface Payment {
+  id: string;
+  store_id: string;
+  order_id: string | null;
+  cliente_nombre: string;
+  monto: number;
+  moneda: 'VES' | 'USD';
+  metodo: string;
+  referencia: string;
+  tasa_bcv: number;
+  created_at: string;
+}
+
+export type ExpenseType = 'operativo' | 'retiro';
+
+export interface Expense {
+  id: string;
+  store_id: string;
+  descripcion: string;
+  categoria: string;
+  proveedor: string;
+  monto: number;
+  moneda: 'VES' | 'USD';
+  metodo: string;
+  tipo: ExpenseType;
+  tasa_bcv: number;
+  created_at: string;
+}
+
+export interface CashClosing {
+  id: string;
+  store_id: string;
+  fecha: string;
+  declarado: number;
+  notas: string;
+  created_at: string;
 }

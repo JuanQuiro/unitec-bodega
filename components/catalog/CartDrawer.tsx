@@ -23,6 +23,7 @@ interface CartDrawerProps {
     cliente_direccion: string;
     zone_id: string | null;
     notas: string;
+    metodo_pago: string;
   }) => Promise<string>;
 }
 
@@ -42,6 +43,7 @@ export function CartDrawer({
   const [clienteTelefono, setClienteTelefono] = useState('');
   const [clienteDireccion, setClienteDireccion] = useState('');
   const [zoneId, setZoneId] = useState<string>('');
+  const [metodoPago, setMetodoPago] = useState<string>('efectivo');
   const [notas, setNotas] = useState('');
   const [submitting, setSubmitting] = useState(false);
 
@@ -63,6 +65,7 @@ export function CartDrawer({
         cliente_direccion: clienteDireccion,
         zone_id: zoneId || null,
         notas,
+        metodo_pago: metodoPago,
       });
 
       // Redirigir a WhatsApp
@@ -205,6 +208,19 @@ export function CartDrawer({
                     required
                     placeholder="Dirección de entrega"
                   />
+                </div>
+                <div>
+                  <label className="mb-1 block text-sm font-medium">Método de pago</label>
+                  <select
+                    value={metodoPago}
+                    onChange={(e) => setMetodoPago(e.target.value)}
+                    className="w-full rounded-md border px-3 py-2 text-sm"
+                  >
+                    <option value="efectivo">Efectivo</option>
+                    <option value="pago_movil">Pago móvil</option>
+                    <option value="transferencia">Transferencia</option>
+                    <option value="tarjeta">Tarjeta</option>
+                  </select>
                 </div>
                 <div>
                   <label className="mb-1 block text-sm font-medium">Notas (opcional)</label>

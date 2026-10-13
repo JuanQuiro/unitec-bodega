@@ -1,3 +1,4 @@
+import Image from 'next/image';
 import { Store } from '@/types/bodega';
 import { MapPin } from 'lucide-react';
 
@@ -10,10 +11,11 @@ export function StoreHeader({ store }: StoreHeaderProps) {
     <header className="border-b bg-white">
       <div className="mx-auto flex max-w-6xl items-center gap-4 px-4 py-4">
         {store.logo_url ? (
-          // eslint-disable-next-line @next/next/no-img-element
-          <img
+          <Image
             src={store.logo_url}
             alt={store.nombre}
+            width={56}
+            height={56}
             className="h-14 w-14 rounded-lg object-cover"
           />
         ) : (

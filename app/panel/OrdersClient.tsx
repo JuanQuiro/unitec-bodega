@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import Link from 'next/link';
 import { Order, Zone, ORDER_STATUSES, OrderStatus } from '@/types/bodega';
 import { formatPrice, formatDate } from '@/utils/format';
 import { StatusBadge } from '@/components/ui/StatusBadge';
@@ -113,7 +114,9 @@ export default function OrdersClient({
             >
               <div className="mb-3 flex items-start justify-between">
                 <div>
-                  <h3 className="font-semibold">{order.cliente_nombre}</h3>
+                  <Link href={`/panel/pedidos/${order.id}`} className="font-semibold hover:text-green-700 hover:underline">
+                    {order.cliente_nombre}
+                  </Link>
                   <p className="text-sm text-gray-500">
                     {order.cliente_telefono}
                   </p>

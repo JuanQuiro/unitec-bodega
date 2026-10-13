@@ -25,6 +25,8 @@ export function ProductForm({
   const [unidad, setUnidad] = useState<Product['unidad']>(product?.unidad ?? 'unidad');
   const [categoria, setCategoria] = useState<Product['categoria']>(product?.categoria ?? 'viveres');
   const [fotoUrl, setFotoUrl] = useState(product?.foto_url ?? '');
+  const [descripcion, setDescripcion] = useState(product?.descripcion ?? '');
+  const [costo, setCosto] = useState(product?.costo?.toString() ?? '0');
   const [activo, setActivo] = useState(product?.activo ?? true);
   const [saving, setSaving] = useState(false);
 
@@ -37,6 +39,8 @@ export function ProductForm({
         store_id: storeId,
         nombre,
         precio: parseFloat(precio),
+        costo: parseFloat(costo) || 0,
+        descripcion: descripcion || null,
         stock: parseInt(stock, 10),
         unidad: unidad as Product['unidad'],
         categoria: categoria as Product['categoria'],
@@ -72,6 +76,30 @@ export function ProductForm({
             required
           />
         </div>
+        <div>
+          <label className="mb-1 block text-sm font-medium">Costo (Bs.)</label>
+          <Input
+            type="number"
+            step="0.01"
+            min="0"
+            value={costo}
+            onChange={(e) => setCosto(e.target.value)}
+          />
+        </div>
+      </div>
+
+      <div>
+        <label className="mb-1 block text-sm font-medium">Descripción (opcional)</label>
+        <textarea
+          value={descripcion}
+          onChange={(e) => setDescripcion(e.target.value)}
+          rows={2}
+          className="w-full rounded-md border px-3 py-2 text-sm"
+          placeholder="Detalle para el cliente..."
+        />
+      </div>
+
+      <div className="grid grid-cols-2 gap-4">
         <div>
           <label className="mb-1 block text-sm font-medium">Stock</label>
           <Input

@@ -6,6 +6,7 @@ import { StoreHeader } from '@/components/catalog/StoreHeader';
 import { SearchBar } from '@/components/catalog/SearchBar';
 import { CategoryFilter } from '@/components/catalog/CategoryFilter';
 import { ProductGrid } from '@/components/catalog/ProductGrid';
+import { ProductQuickView } from '@/components/catalog/ProductQuickView';
 import { CartDrawer } from '@/components/catalog/CartDrawer';
 import { createClient } from '@/utils/supabase/client';
 import { InstallPrompt } from '@/components/InstallPrompt';
@@ -26,6 +27,7 @@ export default function CatalogClient({
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const [cartItems, setCartItems] = useState<OrderItem[]>([]);
   const [cartOpen, setCartOpen] = useState(false);
+  const [quickView, setQuickView] = useState<Product | null>(null);
 
   const filteredProducts = products.filter((product) => {
     const matchesSearch = product.nombre
@@ -36,18 +38,14 @@ export default function CatalogClient({
     return matchesSearch && matchesCategory;
   });
 
-  const addToCart = (product: Product) => {
+  const addToCart = (product: Product, quantity = 1) => {
     setCartItems((prev) => {
       const existing = prev.find((item) => item.product_id === product.id);
       if (existing) {
-        if (existing.cantidad >= product.stock) return prev;
+        const next = Math.min(product.stock, existing.cantidad + quantity);
         return prev.map((item) =>
           item.product_id === product.id
-            ? {
-                ...item,
-                cantidad: item.cantidad + 1,
-                subtotal: (item.cantidad + 1) * item.precio,
-              }
+            ? { ...item, cantidad: next, subtotal: next * item.precio }
             : item
         );
       }
@@ -56,9 +54,9 @@ export default function CatalogClient({
         {
           product_id: product.id,
           nombre: product.nombre,
-          cantidad: 1,
+          cantidad: Math.min(quantity, product.stock),
           precio: product.precio,
-          subtotal: product.precio,
+          subtotal: Math.min(quantity, product.stock) * product.precio,
         },
       ];
     });
@@ -96,6 +94,7 @@ export default function CatalogClient({
     cliente_direccion: string;
     zone_id: string | null;
     notas: string;
+    metodo_pago: string;
   }): Promise<string> => {
     const supabase = createClient();
 
@@ -114,6 +113,7 @@ export default function CatalogClient({
       total: orderTotal,
       estado: 'pendiente',
       notas: orderData.notas || null,
+      metodo_pago: orderData.metodo_pago,
     };
 
     const { data, error } = await supabase
@@ -142,8 +142,10 @@ export default function CatalogClient({
           />
         </div>
 
-        <ProductGrid products={filteredProducts} onAddToCart={addToCart} />
+        <ProductGrid products={filteredProducts} onAddToCart={(p) => addToCart(p)} onQuickView={setQuickView} />
       </main>
+
+      <ProductQuickView product={quickView} onClose={() => setQuickView(null)} onAdd={addToCart} />
 
       {cartItems.length > 0 && (
         <button

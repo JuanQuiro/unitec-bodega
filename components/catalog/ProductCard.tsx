@@ -1,5 +1,6 @@
 'use client';
 
+import Image from 'next/image';
 import { Product } from '@/types/bodega';
 import { formatPrice } from '@/utils/format';
 import { Button } from '@/components/ui/Button/Button';
@@ -8,20 +9,28 @@ import { Plus } from 'lucide-react';
 interface ProductCardProps {
   product: Product;
   onAdd: (product: Product) => void;
+  onQuickView: (product: Product) => void;
 }
 
-export function ProductCard({ product, onAdd }: ProductCardProps) {
+export function ProductCard({ product, onAdd, onQuickView }: ProductCardProps) {
   const outOfStock = product.stock <= 0;
 
   return (
-    <div className="flex flex-col rounded-lg border bg-white p-3 shadow-sm">
+    <div
+      className="flex cursor-pointer flex-col rounded-lg border bg-white p-3 shadow-sm transition-shadow hover:shadow-md"
+      onClick={() => onQuickView(product)}
+    >
       {product.foto_url ? (
-        // eslint-disable-next-line @next/next/no-img-element
-        <img
-          src={product.foto_url}
-          alt={product.nombre}
-          className="mb-3 h-32 w-full rounded-md object-cover"
-        />
+        <div className="relative mb-3 h-32 w-full overflow-hidden rounded-md">
+          <Image
+            src={product.foto_url}
+            alt={product.nombre}
+            fill
+            className="object-cover"
+            sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 20vw"
+            loading="lazy"
+          />
+        </div>
       ) : (
         <div className="mb-3 flex h-32 w-full items-center justify-center rounded-md bg-gray-100 text-gray-400">
           Sin foto
@@ -48,7 +57,10 @@ export function ProductCard({ product, onAdd }: ProductCardProps) {
 
         <Button
           size="sm"
-          onClick={() => onAdd(product)}
+          onClick={(e) => {
+            e.stopPropagation();
+            onAdd(product);
+          }}
           disabled={outOfStock}
           className="h-8 px-3"
         >

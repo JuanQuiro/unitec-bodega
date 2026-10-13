@@ -2,13 +2,14 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { Package, ShoppingCart, MapPin, Store } from 'lucide-react';
+import { Package, ShoppingCart, Store, Calculator, HandCoins } from 'lucide-react';
 
 const navItems = [
   { href: '/panel', label: 'Pedidos', icon: ShoppingCart },
   { href: '/panel/productos', label: 'Productos', icon: Package },
-  { href: '/panel/zonas', label: 'Zonas', icon: MapPin },
-  { href: '/panel/tienda', label: 'Mi Tienda', icon: Store },
+  { href: '/panel/contable', label: 'Contable', icon: Calculator },
+  { href: '/panel/fiados', label: 'Fiados', icon: HandCoins },
+  { href: '/panel/tienda', label: 'Tienda', icon: Store },
 ];
 
 export default function MobileNav() {
@@ -16,7 +17,7 @@ export default function MobileNav() {
 
   return (
     <nav className="fixed bottom-0 left-0 right-0 z-40 border-t bg-white md:hidden">
-      <div className="grid grid-cols-4">
+      <div className="grid grid-cols-5">
         {navItems.map((item) => {
           const isActive =
             item.href === '/panel'

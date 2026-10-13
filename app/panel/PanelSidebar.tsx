@@ -2,13 +2,17 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { Package, ShoppingCart, MapPin, Store, LogOut } from 'lucide-react';
+import { Package, ShoppingCart, MapPin, Store, LogOut, Calculator, HandCoins, Receipt, Lock } from 'lucide-react';
 import { createClient } from '@/utils/supabase/client';
 import { useRouter } from 'next/navigation';
 
 const navItems = [
   { href: '/panel', label: 'Pedidos', icon: ShoppingCart },
   { href: '/panel/productos', label: 'Productos', icon: Package },
+  { href: '/panel/contable', label: 'Contable', icon: Calculator },
+  { href: '/panel/fiados', label: 'Fiados', icon: HandCoins },
+  { href: '/panel/gastos', label: 'Gastos', icon: Receipt },
+  { href: '/panel/cierre', label: 'Cierre', icon: Lock },
   { href: '/panel/zonas', label: 'Zonas', icon: MapPin },
   { href: '/panel/tienda', label: 'Mi Tienda', icon: Store },
 ];

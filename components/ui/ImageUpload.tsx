@@ -11,6 +11,28 @@ interface ImageUploadProps {
   currentImage?: string | null;
 }
 
+// Comprime en el navegador antes de subir: max 1024px, JPEG 82%.
+// Una foto de 5MB del teléfono queda en ~150KB.
+async function compressImage(file: File): Promise<Blob> {
+  const bitmap = await createImageBitmap(file);
+  const maxDim = 1024;
+  const scale = Math.min(1, maxDim / Math.max(bitmap.width, bitmap.height));
+  const w = Math.max(1, Math.round(bitmap.width * scale));
+  const h = Math.max(1, Math.round(bitmap.height * scale));
+  const canvas = document.createElement('canvas');
+  canvas.width = w;
+  canvas.height = h;
+  const ctx = canvas.getContext('2d');
+  if (!ctx) throw new Error('Canvas no disponible');
+  ctx.drawImage(bitmap, 0, 0, w, h);
+  bitmap.close();
+  const blob = await new Promise<Blob | null>((resolve) =>
+    canvas.toBlob(resolve, 'image/jpeg', 0.82)
+  );
+  if (!blob) throw new Error('No se pudo comprimir la imagen');
+  return blob;
+}
+
 export function ImageUpload({
   bucket,
   path,
@@ -28,13 +50,16 @@ export function ImageUpload({
     setUploading(true);
 
     try {
+      const compressed = await compressImage(file);
+      const previewUrl = URL.createObjectURL(compressed);
+      setPreview(previewUrl);
+
       const supabase = createClient();
-      const fileExt = file.name.split('.').pop();
-      const fileName = `${path}/${Date.now()}.${fileExt}`;
+      const fileName = `${path}/${Date.now()}.jpg`;
 
       const { error } = await supabase.storage
         .from(bucket)
-        .upload(fileName, file);
+        .upload(fileName, compressed, { contentType: 'image/jpeg' });
 
       if (error) throw error;
 
@@ -42,6 +67,7 @@ export function ImageUpload({
         data: { publicUrl },
       } = supabase.storage.from(bucket).getPublicUrl(fileName);
 
+      URL.revokeObjectURL(previewUrl);
       setPreview(publicUrl);
       onUpload(publicUrl);
     } catch (error) {
@@ -75,7 +101,7 @@ export function ImageUpload({
         onClick={() => fileInputRef.current?.click()}
         disabled={uploading}
       >
-        {uploading ? 'Subiendo...' : 'Subir imagen'}
+        {uploading ? 'Optimizando y subiendo...' : 'Subir imagen'}
       </Button>
     </div>
   );

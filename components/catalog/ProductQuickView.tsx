@@ -1,0 +1,84 @@
+'use client';
+
+import { useState } from 'react';
+import Image from 'next/image';
+import { Product } from '@/types/bodega';
+import { formatPrice } from '@/utils/format';
+import { Button } from '@/components/ui/Button/Button';
+import { X, Plus, Minus } from 'lucide-react';
+
+interface ProductQuickViewProps {
+  product: Product | null;
+  onClose: () => void;
+  onAdd: (product: Product, quantity: number) => void;
+}
+
+export function ProductQuickView({ product, onClose, onAdd }: ProductQuickViewProps) {
+  const [quantity, setQuantity] = useState(1);
+
+  if (!product) return null;
+  const outOfStock = product.stock <= 0;
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-end justify-center sm:items-center" role="dialog" aria-modal="true">
+      <div className="absolute inset-0 bg-black/50" onClick={onClose} />
+      <div className="relative w-full max-w-lg overflow-hidden rounded-t-2xl bg-white shadow-xl sm:rounded-2xl">
+        <button onClick={onClose} className="absolute right-3 top-3 z-10 rounded-full bg-white/80 p-1 hover:bg-white" aria-label="Cerrar">
+          <X className="h-5 w-5" />
+        </button>
+        {product.foto_url ? (
+          <div className="relative h-56 w-full sm:h-72">
+            <Image src={product.foto_url} alt={product.nombre} fill className="object-cover" sizes="(max-width: 640px) 100vw, 512px" />
+          </div>
+        ) : (
+          <div className="flex h-40 w-full items-center justify-center bg-gray-100 text-gray-400">
+            Sin foto
+          </div>
+        )}
+        <div className="p-4">
+          <h2 className="text-xl font-bold text-gray-900">{product.nombre}</h2>
+          <p className="mt-1 text-2xl font-bold text-green-700">
+            {formatPrice(product.precio)}
+            <span className="ml-1 text-sm font-normal text-gray-500">/ {product.unidad}</span>
+          </p>
+          {product.descripcion && <p className="mt-2 text-sm text-gray-600">{product.descripcion}</p>}
+          <p className={`mt-2 text-sm ${outOfStock ? 'text-red-600' : 'text-gray-500'}`}>
+            {outOfStock ? 'Agotado' : `Stock disponible: ${product.stock}`}
+          </p>
+          <div className="mt-4 flex items-center gap-3">
+            <div className="flex items-center gap-2">
+              <button
+                onClick={() => setQuantity((q) => Math.max(1, q - 1))}
+                className="flex h-9 w-9 items-center justify-center rounded-full border hover:bg-gray-100"
+                aria-label="Quitar uno"
+              >
+                <Minus className="h-4 w-4" />
+              </button>
+              <span className="w-8 text-center font-bold">{quantity}</span>
+              <button
+                onClick={() => setQuantity((q) => Math.min(product.stock, q + 1))}
+                disabled={quantity >= product.stock}
+                className="flex h-9 w-9 items-center justify-center rounded-full border hover:bg-gray-100 disabled:opacity-50"
+                aria-label="Agregar uno"
+              >
+                <Plus className="h-4 w-4" />
+              </button>
+            </div>
+            <Button
+              className="flex-1"
+              disabled={outOfStock}
+              onClick={() => {
+                onAdd(product, quantity);
+                setQuantity(1);
+                onClose();
+              }}
+            >
+              <Plus className="mr-1 h-4 w-4" />
+              Agregar · {formatPrice(product.precio * quantity)}
+            </Button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}

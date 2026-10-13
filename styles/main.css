@@ -57,3 +57,10 @@ p a {
 .height-screen-helper {
   min-height: calc(100vh - 80px);
 }
+
+@media print {
+  aside,
+  nav {
+    display: none !important;
+  }
+}
