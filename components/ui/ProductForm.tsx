@@ -27,6 +27,8 @@ export function ProductForm({
   const [fotoUrl, setFotoUrl] = useState(product?.foto_url ?? '');
   const [descripcion, setDescripcion] = useState(product?.descripcion ?? '');
   const [costo, setCosto] = useState(product?.costo?.toString() ?? '0');
+  const [precioUsd, setPrecioUsd] = useState(product?.precio_usd?.toString() ?? '0');
+  const [descuento, setDescuento] = useState(product?.descuento_pct?.toString() ?? '0');
   const [activo, setActivo] = useState(product?.activo ?? true);
   const [saving, setSaving] = useState(false);
 
@@ -40,6 +42,8 @@ export function ProductForm({
         nombre,
         precio: parseFloat(precio),
         costo: parseFloat(costo) || 0,
+        precio_usd: parseFloat(precioUsd) || 0,
+        descuento_pct: Math.min(100, Math.max(0, parseFloat(descuento) || 0)),
         descripcion: descripcion || null,
         stock: parseInt(stock, 10),
         unidad: unidad as Product['unidad'],
@@ -84,6 +88,30 @@ export function ProductForm({
             min="0"
             value={costo}
             onChange={(e) => setCosto(e.target.value)}
+          />
+        </div>
+      </div>
+
+      <div className="grid grid-cols-2 gap-4">
+        <div>
+          <label className="mb-1 block text-sm font-medium">Precio USD ref. (opcional)</label>
+          <Input
+            type="number"
+            step="0.01"
+            min="0"
+            value={precioUsd}
+            onChange={(e) => setPrecioUsd(e.target.value)}
+          />
+        </div>
+        <div>
+          <label className="mb-1 block text-sm font-medium">Descuento % (oferta)</label>
+          <Input
+            type="number"
+            step="0.5"
+            min="0"
+            max="100"
+            value={descuento}
+            onChange={(e) => setDescuento(e.target.value)}
           />
         </div>
       </div>

@@ -46,7 +46,7 @@ export async function GET(request: Request) {
 
   const { data: productsData } = await supabase
     .from('products')
-    .select('nombre,categoria,unidad,precio,costo,stock,activo')
+    .select('*')
     .eq('store_id', storeId)
     .order('categoria')
     .order('nombre');
@@ -56,6 +56,8 @@ export async function GET(request: Request) {
     unidad: string;
     precio: number;
     costo: number;
+    precio_usd: number;
+    descuento_pct: number;
     stock: number;
     activo: boolean;
   }[];
@@ -69,6 +71,8 @@ export async function GET(request: Request) {
     { header: 'Categoría', key: 'categoria', width: 16 },
     { header: 'Unidad', key: 'unidad', width: 12 },
     { header: 'Precio (Bs.)', key: 'precio', width: 16 },
+    { header: 'Precio USD', key: 'precio_usd', width: 14 },
+    { header: 'Descuento %', key: 'descuento', width: 14 },
     { header: 'Stock', key: 'stock', width: 10 },
     { header: 'Disponible', key: 'disponible', width: 14 },
   ];
@@ -78,6 +82,8 @@ export async function GET(request: Request) {
       categoria: p.categoria,
       unidad: p.unidad,
       precio: Number(p.precio),
+      precio_usd: Number(p.precio_usd || 0),
+      descuento: Number(p.descuento_pct || 0),
       stock: p.stock,
       disponible: p.activo && p.stock > 0 ? 'Sí' : 'No',
     });

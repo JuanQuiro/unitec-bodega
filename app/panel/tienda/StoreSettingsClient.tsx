@@ -21,6 +21,22 @@ export default function StoreSettingsClient({ store }: StoreSettingsClientProps)
   const [logoUrl, setLogoUrl] = useState<string>(store.logo_url ?? '');
   const [saving, setSaving] = useState(false);
   const [copied, setCopied] = useState(false);
+  const [updatingTasa, setUpdatingTasa] = useState(false);
+  const [tasaFuente, setTasaFuente] = useState<string | null>(null);
+
+  const updateTasa = async () => {
+    setUpdatingTasa(true);
+    try {
+      const res = await fetch(`/api/tasa/actualizar?store_id=${store.id}`, { method: 'POST' });
+      const data = await res.json();
+      if (res.ok && data.tasa) {
+        setTasa(String(data.tasa));
+        setTasaFuente(data.fuente || 'BCV');
+      }
+    } finally {
+      setUpdatingTasa(false);
+    }
+  };
 
   const publicUrl = `${window.location.origin}/s/${store.slug}`;
 
@@ -90,14 +106,26 @@ export default function StoreSettingsClient({ store }: StoreSettingsClientProps)
 
             <div>
               <label className="mb-1 block text-sm font-medium">Tasa Bs./USD (para equivalencias)</label>
-              <Input
-                type="number"
-                step="0.01"
-                min="0"
-                value={tasa}
-                onChange={(e) => setTasa(e.target.value)}
-                placeholder="0 = sin equivalencia USD"
-              />
+              <div className="flex gap-2">
+                <Input
+                  type="number"
+                  step="0.01"
+                  min="0"
+                  value={tasa}
+                  onChange={(e) => setTasa(e.target.value)}
+                  placeholder="0 = sin equivalencia USD"
+                  className="flex-1"
+                />
+                <Button type="button" variant="outline" onClick={updateTasa} disabled={updatingTasa}>
+                  {updatingTasa ? '...' : 'Auto BCV'}
+                </Button>
+              </div>
+              <p className="mt-1 text-xs text-gray-500">
+                {store.tasa_updated_at
+                  ? `Actualizada: ${new Date(store.tasa_updated_at).toLocaleString('es-VE')}`
+                  : 'Nunca actualizada automáticamente'}
+                {tasaFuente ? ` · Fuente: ${tasaFuente}` : ''}
+              </p>
             </div>
 
             <div>
@@ -145,6 +173,12 @@ export default function StoreSettingsClient({ store }: StoreSettingsClientProps)
               className="rounded-lg border bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50"
             >
               Lista imprimible / PDF
+            </a>
+            <a
+              href={`/api/export/respaldo?store_id=${store.id}`}
+              className="rounded-lg border bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50"
+            >
+              Respaldo total (JSON)
             </a>
           </div>
         </div>

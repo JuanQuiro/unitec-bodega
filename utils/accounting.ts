@@ -146,3 +146,24 @@ export function toCsv(rows: (string | number)[][]): string {
 export function todayStr(d = new Date()): string {
   return d.toISOString().slice(0, 10);
 }
+
+// Precio final con descuento (oferta). Base para carrito y totales.
+export function precioFinal(precio: number, descuentoPct: number): number {
+  const d = Math.min(100, Math.max(0, toNum(descuentoPct)));
+  return round2(toNum(precio) * (1 - d / 100));
+}
+
+// Bs. calculados desde referencia USD y tasa del día.
+export function bsFromUsd(precioUsd: number, tasaBcv: number): number {
+  return round2(toNum(precioUsd) * toNum(tasaBcv));
+}
+
+// Precio de venta: Bs. directo, o calculado desde USD si no hay precio en Bs.
+export function precioVenta(
+  p: { precio: number; precio_usd: number; descuento_pct: number },
+  tasaBcv: number
+): number {
+  const base =
+    toNum(p.precio) > 0 ? toNum(p.precio) : bsFromUsd(p.precio_usd, tasaBcv);
+  return precioFinal(base, p.descuento_pct);
+}

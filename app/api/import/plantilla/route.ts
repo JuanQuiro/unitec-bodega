@@ -12,6 +12,8 @@ export async function GET() {
     { header: 'Precio (Bs.)', key: 'precio', width: 16 },
     { header: 'Costo (Bs.)', key: 'costo', width: 16 },
     { header: 'Stock', key: 'stock', width: 10 },
+    { header: 'Precio USD', key: 'precio_usd', width: 14 },
+    { header: 'Descuento %', key: 'descuento', width: 14 },
   ];
   sheet.addRow({
     nombre: 'Arroz 1kg (ejemplo, borrar)',
@@ -20,6 +22,8 @@ export async function GET() {
     precio: 78,
     costo: 60,
     stock: 40,
+    precio_usd: 0,
+    descuento: 0,
   });
   sheet.getRow(1).font = { bold: true };
 

@@ -5,11 +5,12 @@ import { ProductCard } from './ProductCard';
 
 interface ProductGridProps {
   products: Product[];
+  tasaBcv: number;
   onAddToCart: (product: Product) => void;
   onQuickView: (product: Product) => void;
 }
 
-export function ProductGrid({ products, onAddToCart, onQuickView }: ProductGridProps) {
+export function ProductGrid({ products, tasaBcv, onAddToCart, onQuickView }: ProductGridProps) {
   if (products.length === 0) {
     return (
       <div className="py-12 text-center text-gray-500">
@@ -24,6 +25,7 @@ export function ProductGrid({ products, onAddToCart, onQuickView }: ProductGridP
         <ProductCard
           key={product.id}
           product={product}
+          tasaBcv={tasaBcv}
           onAdd={onAddToCart}
           onQuickView={onQuickView}
         />

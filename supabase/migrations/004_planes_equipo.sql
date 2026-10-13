@@ -102,6 +102,8 @@ create policy "zones_member_read" on public.zones
 
 grant select, insert, update, delete on public.bodega_subscriptions to authenticated;
 grant select, insert, update, delete on public.bodega_members to authenticated;
+-- anon necesita SELECT para evaluar las policies *_member_* en queries públicas
+grant select on public.bodega_members to anon;
 
 -- --- Invitaciones pendientes (el invitado se registra y se auto-adjunta) ---
 create table if not exists public.bodega_invites (

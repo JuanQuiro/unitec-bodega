@@ -220,6 +220,8 @@ export function CartDrawer({
                     <option value="pago_movil">Pago móvil</option>
                     <option value="transferencia">Transferencia</option>
                     <option value="tarjeta">Tarjeta</option>
+                    <option value="zelle">Zelle</option>
+                    <option value="usdt">USDT</option>
                   </select>
                 </div>
                 <div>

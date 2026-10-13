@@ -27,6 +27,7 @@ const nextStatusLabel: Partial<Record<OrderStatus, string>> = {
 
 interface PedidoDetailClientProps {
   storeId: string;
+  storeTasa: number;
   order: Order;
   payments: Payment[];
   zoneName: string | null;
@@ -34,6 +35,7 @@ interface PedidoDetailClientProps {
 
 export default function PedidoDetailClient({
   storeId,
+  storeTasa,
   order: initialOrder,
   payments: initialPayments,
   zoneName,
@@ -41,6 +43,7 @@ export default function PedidoDetailClient({
   const [order, setOrder] = useState<Order>(initialOrder);
   const [payments, setPayments] = useState<Payment[]>(initialPayments);
   const [monto, setMonto] = useState('');
+  const [moneda, setMoneda] = useState<'VES' | 'USD'>('VES');
   const [metodo, setMetodo] = useState('efectivo');
 
   const pagado = payments.reduce((s, p) => s + toNum(p.monto), 0);
@@ -69,8 +72,9 @@ export default function PedidoDetailClient({
         order_id: order.id,
         cliente_nombre: order.cliente_nombre,
         monto: parseFloat(monto),
-        moneda: 'VES',
+        moneda,
         metodo,
+        tasa_bcv: storeTasa,
       })
       .select()
       .single();
@@ -85,6 +89,11 @@ export default function PedidoDetailClient({
       <Link href="/panel" className="mb-4 inline-block text-sm text-green-700 hover:underline">
         ← Volver a pedidos
       </Link>
+      <div className="mb-4 flex justify-end print:hidden">
+        <Button size="sm" variant="outline" onClick={() => window.print()}>
+          Imprimir ticket
+        </Button>
+      </div>
 
       <div className="mb-4 flex items-start justify-between">
         <div>
@@ -147,8 +156,15 @@ export default function PedidoDetailClient({
         </div>
         <form onSubmit={handlePayment} className="flex flex-wrap items-end gap-2">
           <div>
-            <label className="mb-1 block text-xs font-medium">Monto (Bs.)</label>
-            <Input type="number" step="0.01" min="0.01" value={monto} onChange={(e) => setMonto(e.target.value)} required className="w-32" />
+            <label className="mb-1 block text-xs font-medium">Monto</label>
+            <Input type="number" step="0.01" min="0.01" value={monto} onChange={(e) => setMonto(e.target.value)} required className="w-28" />
+          </div>
+          <div>
+            <label className="mb-1 block text-xs font-medium">Moneda</label>
+            <select value={moneda} onChange={(e) => setMoneda(e.target.value as 'VES' | 'USD')} className="h-10 rounded-md border px-2 text-sm">
+              <option value="VES">Bs.</option>
+              <option value="USD">USD</option>
+            </select>
           </div>
           <div>
             <label className="mb-1 block text-xs font-medium">Método</label>

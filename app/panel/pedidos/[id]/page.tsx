@@ -43,6 +43,7 @@ export default async function PedidoDetailPage({ params }: PageProps) {
   return (
     <PedidoDetailClient
       storeId={store.id}
+      storeTasa={store.tasa_bcv || 0}
       order={order}
       payments={payments || []}
       zoneName={zone?.nombre ?? null}

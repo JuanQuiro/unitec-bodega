@@ -34,5 +34,5 @@ export default async function FiadosPage() {
     payments = (paymentsData || []) as unknown as Pick<Payment, 'order_id' | 'monto' | 'moneda' | 'metodo' | 'tasa_bcv'>[];
   }
 
-  return <FiadosClient storeId={store.id} orders={orders || []} payments={payments} />;
+  return <FiadosClient storeId={store.id} storeTasa={store.tasa_bcv || 0} orders={orders} payments={payments} />;
 }

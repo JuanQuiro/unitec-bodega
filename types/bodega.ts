@@ -8,6 +8,7 @@ export interface Store {
   direccion: string | null;
   activa: boolean;
   tasa_bcv: number;
+  tasa_updated_at: string | null;
   created_at: string;
 }
 
@@ -16,6 +17,8 @@ export interface Product {
   store_id: string;
   nombre: string;
   precio: number;
+  precio_usd: number;
+  descuento_pct: number;
   stock: number;
   foto_url: string | null;
   descripcion: string | null;
@@ -116,6 +119,7 @@ export const PAYMENT_METHODS = [
   'transferencia',
   'tarjeta',
   'zelle',
+  'usdt',
   'fiado',
 ] as const;
 

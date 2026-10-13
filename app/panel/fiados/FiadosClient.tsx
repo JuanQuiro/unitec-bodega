@@ -10,14 +10,16 @@ import { createClient } from '@/utils/supabase/client';
 
 interface FiadosClientProps {
   storeId: string;
+  storeTasa: number;
   orders: Order[];
   payments: Pick<Payment, 'order_id' | 'monto' | 'moneda' | 'metodo' | 'tasa_bcv'>[];
 }
 
-export default function FiadosClient({ storeId, orders, payments: initialPayments }: FiadosClientProps) {
+export default function FiadosClient({ storeId, storeTasa, orders, payments: initialPayments }: FiadosClientProps) {
   const [payments, setPayments] = useState(initialPayments);
   const [abonarId, setAbonarId] = useState<string | null>(null);
   const [monto, setMonto] = useState('');
+  const [moneda, setMoneda] = useState<'VES' | 'USD'>('VES');
   const [metodo, setMetodo] = useState('efectivo');
   const [referencia, setReferencia] = useState('');
 
@@ -34,9 +36,10 @@ export default function FiadosClient({ storeId, orders, payments: initialPayment
         order_id: order.id,
         cliente_nombre: order.cliente_nombre,
         monto: parseFloat(monto),
-        moneda: 'VES',
+        moneda,
         metodo,
         referencia,
+        tasa_bcv: storeTasa,
       })
       .select('*')
       .single();
@@ -98,8 +101,15 @@ export default function FiadosClient({ storeId, orders, payments: initialPayment
                   {abonarId === order.id ? (
                     <form onSubmit={(e) => handleAbonar(e, order)} className="flex flex-wrap items-end gap-2">
                       <div>
-                        <label className="mb-1 block text-xs font-medium">Monto (Bs.)</label>
-                        <Input type="number" step="0.01" min="0.01" value={monto} onChange={(e) => setMonto(e.target.value)} required className="w-32" />
+                        <label className="mb-1 block text-xs font-medium">Monto</label>
+                        <Input type="number" step="0.01" min="0.01" value={monto} onChange={(e) => setMonto(e.target.value)} required className="w-28" />
+                      </div>
+                      <div>
+                        <label className="mb-1 block text-xs font-medium">Moneda</label>
+                        <select value={moneda} onChange={(e) => setMoneda(e.target.value as 'VES' | 'USD')} className="h-10 rounded-md border px-2 text-sm">
+                          <option value="VES">Bs.</option>
+                          <option value="USD">USD</option>
+                        </select>
                       </div>
                       <div>
                         <label className="mb-1 block text-xs font-medium">Método</label>
@@ -119,9 +129,21 @@ export default function FiadosClient({ storeId, orders, payments: initialPayment
                       </Button>
                     </form>
                   ) : (
-                    <Button size="sm" onClick={() => setAbonarId(order.id)}>
-                      Registrar abono
-                    </Button>
+                    <div className="flex gap-2">
+                      <Button size="sm" onClick={() => setAbonarId(order.id)}>
+                        Registrar abono
+                      </Button>
+                      <a
+                        href={`https://wa.me/${order.cliente_telefono.replace(/\D/g, '')}?text=${encodeURIComponent(
+                          `Hola ${order.cliente_nombre}, te recordamos tu saldo pendiente de ${formatPrice(saldo)} en tu bodega. ¡Gracias!`
+                        )}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="rounded-lg border px-3 py-1.5 text-sm font-medium text-gray-700 hover:bg-gray-50"
+                      >
+                        Recordar por WhatsApp
+                      </a>
+                    </div>
                   )}
                 </div>
               )}

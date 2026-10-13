@@ -14,6 +14,8 @@ interface ParsedRow {
   unidad: string;
   precio: number;
   costo: number;
+  precio_usd: number;
+  descuento: number;
   stock: number;
 }
 
@@ -90,6 +92,8 @@ export async function POST(request: Request) {
     const unidadRaw = v(3).toLowerCase() || 'unidad';
     const precio = Number(v(4));
     const costo = v(5) === '' ? 0 : Number(v(5));
+    const precioUsd = v(7) === '' ? 0 : Number(v(7));
+    const descuento = v(8) === '' ? 0 : Number(v(8));
     const stock = v(6) === '' ? 0 : Number(v(6));
 
     if (!nombre) {
@@ -104,8 +108,16 @@ export async function POST(request: Request) {
       errors.push({ line: rowNumber, reason: `"${nombre}": costo inválido` });
       return;
     }
-    if (!Number.isInteger(stock) || stock < 0) {
+    if (!Number.isFinite(stock) || !Number.isInteger(stock) || stock < 0) {
       errors.push({ line: rowNumber, reason: `"${nombre}": stock inválido` });
+      return;
+    }
+    if (!Number.isFinite(precioUsd) || precioUsd < 0) {
+      errors.push({ line: rowNumber, reason: `"${nombre}": precio USD inválido` });
+      return;
+    }
+    if (!Number.isFinite(descuento) || descuento < 0 || descuento > 100) {
+      errors.push({ line: rowNumber, reason: `"${nombre}": descuento inválido (0-100)` });
       return;
     }
     valid.push({
@@ -117,6 +129,8 @@ export async function POST(request: Request) {
       unidad: (PRODUCT_UNITS as readonly string[]).includes(unidadRaw) ? unidadRaw : 'unidad',
       precio: Math.round(precio * 100) / 100,
       costo: Math.round(costo * 100) / 100,
+      precio_usd: Math.round(precioUsd * 100) / 100,
+      descuento: Math.round(descuento * 100) / 100,
       stock,
     });
   });
@@ -149,6 +163,8 @@ export async function POST(request: Request) {
           unidad: row.unidad,
           precio: row.precio,
           costo: row.costo,
+          precio_usd: row.precio_usd,
+          descuento_pct: row.descuento,
           stock: row.stock,
         } as never)
         .eq('id', found.id);
@@ -161,6 +177,8 @@ export async function POST(request: Request) {
         unidad: row.unidad,
         precio: row.precio,
         costo: row.costo,
+        precio_usd: row.precio_usd,
+        descuento_pct: row.descuento,
         stock: row.stock,
         activo: true,
       } as never);

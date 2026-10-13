@@ -4,17 +4,19 @@ import { useState } from 'react';
 import Image from 'next/image';
 import { Product } from '@/types/bodega';
 import { formatPrice } from '@/utils/format';
+import { bsFromUsd, precioVenta, toNum } from '@/utils/accounting';
 import { Button } from '@/components/ui/Button/Button';
 import { X, Plus, Minus, Share2, Check } from 'lucide-react';
 
 interface ProductQuickViewProps {
   product: Product | null;
   storeSlug: string;
+  storeTasa: number;
   onClose: () => void;
   onAdd: (product: Product, quantity: number) => void;
 }
 
-export function ProductQuickView({ product, storeSlug, onClose, onAdd }: ProductQuickViewProps) {
+export function ProductQuickView({ product, storeSlug, storeTasa, onClose, onAdd }: ProductQuickViewProps) {
   const [quantity, setQuantity] = useState(1);
   const [copied, setCopied] = useState(false);
 
@@ -30,6 +32,8 @@ export function ProductQuickView({ product, storeSlug, onClose, onAdd }: Product
 
   if (!product) return null;
   const outOfStock = product.stock <= 0;
+  const final = precioVenta(product, storeTasa);
+  const base = toNum(product.precio) > 0 ? toNum(product.precio) : bsFromUsd(product.precio_usd, storeTasa);
 
   return (
     <div className="fixed inset-0 z-50 flex items-end justify-center sm:items-center" role="dialog" aria-modal="true">
@@ -49,10 +53,21 @@ export function ProductQuickView({ product, storeSlug, onClose, onAdd }: Product
         )}
         <div className="p-4">
           <h2 className="text-xl font-bold text-gray-900">{product.nombre}</h2>
+          {product.descuento_pct > 0 && (
+            <span className="mt-1 inline-block rounded bg-red-600 px-2 py-0.5 text-xs font-bold text-white">
+              OFERTA -{product.descuento_pct}%
+            </span>
+          )}
           <p className="mt-1 text-2xl font-bold text-green-700">
-            {formatPrice(product.precio)}
+            {formatPrice(final)}
             <span className="ml-1 text-sm font-normal text-gray-500">/ {product.unidad}</span>
           </p>
+          {product.descuento_pct > 0 && base > final && (
+            <p className="text-sm text-gray-400 line-through">{formatPrice(base)}</p>
+          )}
+          {product.precio_usd > 0 && (
+            <p className="text-xs text-gray-500">Ref: ${Number(product.precio_usd).toFixed(2)}</p>
+          )}
           {product.descripcion && <p className="mt-2 text-sm text-gray-600">{product.descripcion}</p>}
           <p className={`mt-2 text-sm ${outOfStock ? 'text-red-600' : 'text-gray-500'}`}>
             {outOfStock ? 'Agotado' : `Stock disponible: ${product.stock}`}
@@ -86,7 +101,7 @@ export function ProductQuickView({ product, storeSlug, onClose, onAdd }: Product
               }}
             >
               <Plus className="mr-1 h-4 w-4" />
-              Agregar · {formatPrice(product.precio * quantity)}
+              Agregar · {formatPrice(final * quantity)}
             </Button>
           </div>
           <button

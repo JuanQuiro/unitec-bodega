@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { Product, PRODUCT_CATEGORIES } from '@/types/bodega';
 import { formatPrice } from '@/utils/format';
 import { Button } from '@/components/ui/Button/Button';
+import { Input } from '@/components/ui/Input/Input';
 import { ProductForm } from '@/components/ui/ProductForm';
 import ImportClient from './ImportClient';
 import { createClient } from '@/utils/supabase/client';
@@ -22,6 +23,9 @@ export default function ProductsClient({
   const [showForm, setShowForm] = useState(false);
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
   const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null);
+  const [compraProduct, setCompraProduct] = useState<Product | null>(null);
+  const [compraQty, setCompraQty] = useState('');
+  const [compraCosto, setCompraCosto] = useState('');
   const [bulkMode, setBulkMode] = useState(false);
   const [importMode, setImportMode] = useState(false);
   const [bulkPercent, setBulkPercent] = useState('');
@@ -247,6 +251,64 @@ export default function ProductsClient({
         </div>
       )}
 
+      {compraProduct && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
+          <div className="w-full max-w-sm rounded-lg bg-white p-6">
+            <h3 className="mb-1 text-lg font-semibold">Registrar compra</h3>
+            <p className="mb-4 text-sm text-gray-500">{compraProduct.nombre} (stock actual: {compraProduct.stock})</p>
+            <form
+              onSubmit={async (e) => {
+                e.preventDefault();
+                const qty = parseInt(compraQty, 10);
+                const costo = parseFloat(compraCosto);
+                if (!qty || qty <= 0) return;
+                const supabase = createClient();
+                const newStock = compraProduct.stock + qty;
+                const newCosto = costo > 0 ? costo : compraProduct.costo;
+                const { error } = await supabase
+                  .from('products')
+                  .update({ stock: newStock, costo: newCosto })
+                  .eq('id', compraProduct.id);
+                if (error) return;
+                await supabase.from('bodega_expenses').insert({
+                  store_id: storeId,
+                  descripcion: `Compra: ${compraProduct.nombre} x${qty}`,
+                  categoria: 'inventario',
+                  monto: (costo > 0 ? costo : compraProduct.costo) * qty,
+                  moneda: 'VES',
+                  metodo: 'efectivo',
+                  tipo: 'operativo',
+                } as never);
+                setProducts((prev) =>
+                  prev.map((p) =>
+                    p.id === compraProduct.id ? { ...p, stock: newStock, costo: newCosto } : p
+                  )
+                );
+                setCompraProduct(null);
+                setCompraQty('');
+                setCompraCosto('');
+              }}
+              className="space-y-3"
+            >
+              <div>
+                <label className="mb-1 block text-sm font-medium">Cantidad que entra</label>
+                <Input type="number" min="1" value={compraQty} onChange={(e) => setCompraQty(e.target.value)} required />
+              </div>
+              <div>
+                <label className="mb-1 block text-sm font-medium">Costo unitario (Bs.)</label>
+                <Input type="number" step="0.01" min="0" value={compraCosto} onChange={(e) => setCompraCosto(e.target.value)} />
+              </div>
+              <div className="flex justify-end gap-2">
+                <Button type="button" variant="outline" onClick={() => setCompraProduct(null)}>
+                  Cancelar
+                </Button>
+                <Button type="submit">Guardar compra</Button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
       {deleteConfirm && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
           <div className="w-full max-w-sm rounded-lg bg-white p-6">
@@ -333,6 +395,17 @@ export default function ProductsClient({
                 </td>
                 <td className="p-4">
                   <div className="flex gap-1">
+                    <button
+                      onClick={() => {
+                        setCompraProduct(product);
+                        setCompraQty('');
+                        setCompraCosto(product.costo > 0 ? String(product.costo) : '');
+                      }}
+                      className="rounded px-1 text-xs font-medium text-green-700 hover:bg-green-50"
+                      title="Registrar compra (suma stock)"
+                    >
+                      + Stock
+                    </button>
                     <button
                       onClick={() => setEditingProduct(product)}
                       className="rounded p-1 hover:bg-gray-100"

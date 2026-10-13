@@ -10,6 +10,7 @@ import { ProductGrid } from '@/components/catalog/ProductGrid';
 import { ProductQuickView } from '@/components/catalog/ProductQuickView';
 import { CartDrawer } from '@/components/catalog/CartDrawer';
 import { createClient } from '@/utils/supabase/client';
+import { precioVenta } from '@/utils/accounting';
 import { InstallPrompt } from '@/components/InstallPrompt';
 import { ShoppingCart } from 'lucide-react';
 
@@ -57,24 +58,26 @@ export default function CatalogClient({
   });
 
   const addToCart = (product: Product, quantity = 1) => {
+    const unit = precioVenta(product, store.tasa_bcv);
     setCartItems((prev) => {
       const existing = prev.find((item) => item.product_id === product.id);
       if (existing) {
         const next = Math.min(product.stock, existing.cantidad + quantity);
         return prev.map((item) =>
           item.product_id === product.id
-            ? { ...item, cantidad: next, subtotal: next * item.precio }
+            ? { ...item, cantidad: next, subtotal: next * unit }
             : item
         );
       }
+      const qty = Math.min(quantity, product.stock);
       return [
         ...prev,
         {
           product_id: product.id,
           nombre: product.nombre,
-          cantidad: Math.min(quantity, product.stock),
-          precio: product.precio,
-          subtotal: Math.min(quantity, product.stock) * product.precio,
+          cantidad: qty,
+          precio: unit,
+          subtotal: qty * unit,
         },
       ];
     });
@@ -160,10 +163,10 @@ export default function CatalogClient({
           />
         </div>
 
-        <ProductGrid products={filteredProducts} onAddToCart={(p) => addToCart(p)} onQuickView={setQuickView} />
+        <ProductGrid products={filteredProducts} tasaBcv={store.tasa_bcv} onAddToCart={(p) => addToCart(p)} onQuickView={setQuickView} />
       </main>
 
-      <ProductQuickView product={quickView} storeSlug={store.slug} onClose={() => setQuickView(null)} onAdd={addToCart} />
+      <ProductQuickView product={quickView} storeSlug={store.slug} storeTasa={store.tasa_bcv} onClose={() => setQuickView(null)} onAdd={addToCart} />
       <Suspense fallback={null}>
         <QuickViewOpener products={products} onOpen={setQuickView} />
       </Suspense>
