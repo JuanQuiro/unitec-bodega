@@ -5,7 +5,8 @@ import { Product, Zone, OrderItem } from '@/types/bodega';
 import { formatPrice } from '@/utils/format';
 import { Button } from '@/components/ui/Button/Button';
 import { Input } from '@/components/ui/Input/Input';
-import { X, Plus, Minus, ShoppingCart } from 'lucide-react';
+import { X, Plus, Minus, ShoppingCart, CheckCircle2 } from 'lucide-react';
+import { buildWhatsAppUrl, formatOrderForWhatsApp } from '@/utils/whatsapp';
 
 interface CartDrawerProps {
   isOpen: boolean;
@@ -46,6 +47,14 @@ export function CartDrawer({
   const [metodoPago, setMetodoPago] = useState<string>('efectivo');
   const [notas, setNotas] = useState('');
   const [submitting, setSubmitting] = useState(false);
+  const [sent, setSent] = useState<{ waUrl: string; total: number; count: number } | null>(null);
+  const [error, setError] = useState<string | null>(null);
+
+  const close = () => {
+    setSent(null);
+    setError(null);
+    onClose();
+  };
 
   const selectedZone = zones.find((z) => z.id === zoneId);
   const subtotal = items.reduce((sum, item) => sum + item.subtotal, 0);
@@ -55,9 +64,26 @@ export function CartDrawer({
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (items.length === 0) return;
+    if (items.length === 0 || submitting) return;
+
+    if (!clienteNombre.trim() || !clienteTelefono.trim() || !clienteDireccion.trim()) {
+      setError('Completá tu nombre, teléfono y dirección para enviar el pedido.');
+      return;
+    }
+    if (selectedZone && !meetsMinimum) {
+      setError(
+        `El pedido mínimo para ${selectedZone.nombre} es ${formatPrice(selectedZone.minimo)}`
+      );
+      return;
+    }
 
     setSubmitting(true);
+    setError(null);
+
+    // Abrimos la pestaña ahora, dentro del gesto del usuario, para que el
+    // bloqueador de popups no la bloquee después del await.
+    const waWin = window.open('', '_blank');
+
     try {
       const orderId = await onSubmitOrder({
         cliente_nombre: clienteNombre,
@@ -68,13 +94,36 @@ export function CartDrawer({
         metodo_pago: metodoPago,
       });
 
-      // Redirigir a WhatsApp
-      const waUrl = `https://wa.me/${storeWhatsapp.replace(/[^\d]/g, '')}`;
-      window.open(waUrl, '_blank');
+      const message = formatOrderForWhatsApp(
+        {
+          cliente_nombre: clienteNombre,
+          cliente_telefono: clienteTelefono,
+          cliente_direccion: clienteDireccion,
+          items,
+          total,
+          notas,
+          metodo_pago: metodoPago,
+          ref: orderId ? orderId.slice(0, 8).toUpperCase() : null,
+        },
+        storeName,
+        selectedZone ?? null
+      );
+      const waUrl = buildWhatsAppUrl(storeWhatsapp, message);
 
-      onClose();
+      setSent({
+        waUrl,
+        total,
+        count: items.reduce((sum, item) => sum + item.cantidad, 0),
+      });
+
+      try {
+        if (waWin) waWin.location.href = waUrl;
+      } catch {
+        // Si no podemos navegar la pestaña, queda el botón de la pantalla de éxito
+      }
     } catch (error) {
-      console.error('Error submitting order:', error);
+      if (waWin) waWin.close();
+      setError('No pudimos enviar tu pedido. Revisá tu conexión e intentá de nuevo.');
     } finally {
       setSubmitting(false);
     }
@@ -90,7 +139,7 @@ export function CartDrawer({
     <div className="fixed inset-0 z-50 flex justify-end">
       <div
         className="absolute inset-0 bg-black/50"
-        onClick={onClose}
+        onClick={close}
       />
 
       <div className="relative flex h-full w-full max-w-md flex-col bg-white shadow-xl">
@@ -99,12 +148,40 @@ export function CartDrawer({
             <ShoppingCart className="h-5 w-5" />
             Tu pedido
           </h2>
-          <button onClick={onClose} className="rounded-full p-1 hover:bg-gray-100">
+          <button onClick={close} className="rounded-full p-1 hover:bg-gray-100" aria-label="Cerrar carrito">
             <X className="h-5 w-5" />
           </button>
         </div>
 
-        {items.length === 0 ? (
+        {sent ? (
+          <div className="flex flex-1 flex-col items-center justify-center gap-3 p-6 text-center">
+            <div className="flex h-16 w-16 items-center justify-center rounded-full bg-green-100">
+              <CheckCircle2 className="h-9 w-9 text-green-600" />
+            </div>
+            <h3 className="text-xl font-bold">¡Pedido enviado!</h3>
+            <p className="text-sm text-gray-600">
+              {sent.count} {sent.count === 1 ? 'producto' : 'productos'} · {formatPrice(sent.total)}
+            </p>
+            <p className="text-sm text-gray-500">
+              Se abrió WhatsApp con el detalle de tu pedido para enviárselo a la bodega.
+              Si no se abrió, tocá el botón.
+            </p>
+            <a
+              href={sent.waUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="mt-2 inline-flex h-12 w-full items-center justify-center rounded-md bg-green-600 px-6 text-sm font-medium text-white hover:bg-green-700"
+            >
+              Abrir WhatsApp
+            </a>
+            <button
+              onClick={close}
+              className="text-sm text-gray-500 underline hover:text-gray-700"
+            >
+              Seguir viendo productos
+            </button>
+          </div>
+        ) : items.length === 0 ? (
           <div className="flex flex-1 items-center justify-center text-gray-500">
             Tu carrito está vacío
           </div>
@@ -181,7 +258,7 @@ export function CartDrawer({
               )}
 
               {/* Formulario de cliente */}
-              <form onSubmit={handleSubmit} className="mt-6 space-y-3">
+              <form id="checkout-form" onSubmit={handleSubmit} className="mt-6 space-y-3">
                 <div>
                   <label className="mb-1 block text-sm font-medium">Nombre</label>
                   <Input
@@ -263,8 +340,11 @@ export function CartDrawer({
                 </p>
               )}
 
+              {error && <p className="mb-2 text-xs text-red-600">{error}</p>}
+
               <Button
-                onClick={handleSubmit}
+                type="submit"
+                form="checkout-form"
                 disabled={submitting || !meetsMinimum || !clienteNombre || !clienteTelefono || !clienteDireccion}
                 className="w-full"
                 size="lg"

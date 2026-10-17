@@ -91,8 +91,11 @@ export default function StoreSettingsClient({ store }: StoreSettingsClientProps)
                 value={whatsapp}
                 onChange={(e) => setWhatsapp(e.target.value)}
                 required
-                placeholder="04121234567"
+                placeholder="04141234567"
               />
+              <p className="mt-1 text-xs text-gray-500">
+                Con o sin código de país (ej: 584141234567). Los pedidos llegan a este número.
+              </p>
             </div>
 
             <div>

@@ -7,6 +7,7 @@ import { fiadoBalance, monedasForMethod, toNum } from '@/utils/accounting';
 import { Button } from '@/components/ui/Button/Button';
 import { Input } from '@/components/ui/Input/Input';
 import { createClient } from '@/utils/supabase/client';
+import { buildWhatsAppUrl } from '@/utils/whatsapp';
 
 interface FiadosClientProps {
   storeId: string;
@@ -140,9 +141,10 @@ export default function FiadosClient({ storeId, storeTasa, orders, payments: ini
                         Registrar abono
                       </Button>
                       <a
-                        href={`https://wa.me/${order.cliente_telefono.replace(/\D/g, '')}?text=${encodeURIComponent(
+                        href={buildWhatsAppUrl(
+                          order.cliente_telefono,
                           `Hola ${order.cliente_nombre}, te recordamos tu saldo pendiente de ${formatPrice(saldo)} en tu bodega. ¡Gracias!`
-                        )}`}
+                        )}
                         target="_blank"
                         rel="noopener noreferrer"
                         className="rounded-lg border px-3 py-1.5 text-sm font-medium text-gray-700 hover:bg-gray-50"
