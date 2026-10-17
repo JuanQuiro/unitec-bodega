@@ -11,6 +11,7 @@ create table if not exists public.bodega_messages (
   autor text not null check (autor in ('cliente','bodega')),
   autor_nombre text,
   body text not null,
+  photo_path text,
   leido_bodega boolean not null default false,
   leido_cliente boolean not null default false,
   created_at timestamptz default now()
@@ -79,7 +80,8 @@ create or replace function public.pedido_chat_enviar(
   p_order uuid,
   p_token uuid,
   p_nombre text,
-  p_body text
+  p_body text,
+  p_photo text default null
 )
 returns public.bodega_messages
 language plpgsql
@@ -98,18 +100,27 @@ begin
     raise exception 'no autorizado';
   end if;
 
-  if p_body is null or length(trim(p_body)) = 0 or length(p_body) > 1000 then
+  if (p_body is null or length(trim(p_body)) = 0) and p_photo is null then
     raise exception 'mensaje inválido';
   end if;
 
-  insert into public.bodega_messages (store_id, order_id, autor, autor_nombre, body)
-  values (v_store, p_order, 'cliente', left(coalesce(p_nombre, ''), 80), left(trim(p_body), 1000))
+  if length(trim(coalesce(p_body, ''))) > 1000 then
+    raise exception 'mensaje inválido';
+  end if;
+
+  if p_photo is not null and left(p_photo, 7) <> 'stores/' then
+    raise exception 'foto inválida';
+  end if;
+
+  insert into public.bodega_messages (store_id, order_id, autor, autor_nombre, body, photo_path)
+  values (v_store, p_order, 'cliente', left(coalesce(p_nombre, ''), 80),
+          left(trim(coalesce(p_body, '')), 1000), left(p_photo, 500))
   returning * into v_row;
 
   return v_row;
 end $$;
 
 revoke all on function public.pedido_chat_leer(uuid, uuid) from public;
-revoke all on function public.pedido_chat_enviar(uuid, uuid, text, text) from public;
+revoke all on function public.pedido_chat_enviar(uuid, uuid, text, text, text) from public;
 grant execute on function public.pedido_chat_leer(uuid, uuid) to anon, authenticated;
-grant execute on function public.pedido_chat_enviar(uuid, uuid, text, text) to anon, authenticated;
+grant execute on function public.pedido_chat_enviar(uuid, uuid, text, text, text) to anon, authenticated;
